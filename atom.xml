@@ -4,7 +4,7 @@
   <title><![CDATA[Alfred's Blog]]></title>
   <link href="http://365day.github.io/atom.xml" rel="self"/>
   <link href="http://365day.github.io/"/>
-  <updated>2014-05-08T19:36:38+08:00</updated>
+  <updated>2014-05-08T19:45:41+08:00</updated>
   <id>http://365day.github.io/</id>
   <author>
     <name><![CDATA[GaoChuanjun]]></name>
@@ -142,23 +142,27 @@ configure.in:28: error: possibly undefined macro: AC_PROG_LIBTOOL</p>
 <p>autoreconf: /usr/local/homebrew/Cellar/autoconf/2.69/bin/autoconf failed with exit status: 1
 autogen.sh: error: autoreconf exited with status 0</p></blockquote>
 
-<p>解决方法如下（参考<a href="http://stackoverflow.com/questions/3522248/how-do-i-compile-jzmq-for-zeromq-on-osx">http://stackoverflow.com/questions/3522248/how-do-i-compile-jzmq-for-zeromq-on-osx</a>）：</p>
+<p>解决方法如下：（以下命令参考于<a href="http://stackoverflow.com/questions/3522248/how-do-i-compile-jzmq-for-zeromq-on-osx">http://stackoverflow.com/questions/3522248/how-do-i-compile-jzmq-for-zeromq-on-osx</a>）：</p>
 
 <p>在控制台下执行如下两行命令：</p>
 
-<blockquote><p>eval <code>brew --config | grep HOMEBREW_PREFIX | sed 's/: /=/'</code></p>
+<blockquote><p>eval `brew &mdash;config | grep HOMEBREW_PREFIX | sed &rsquo;s/: /=/&lsquo;`</p>
 
-<p>sudo bash -c &lsquo;echo &rsquo;$HOMEBREW_PREFIX/share/aclocal&#8217; >> <code>aclocal --print-ac-dir</code>/dirlist&#8217;</p></blockquote>
+<p>sudo bash -c &lsquo;echo &rsquo;$HOMEBREW_PREFIX/share/aclocal&#8217; >> `aclocal &mdash;print-ac-dir`/dirlist&#8217;</p></blockquote>
 
-<p>如果出现bash: aclocal: command not found的问题，请加入aclocal的全路径：</p>
+<p>执行上述命令如果出现如下问题：</p>
 
-<blockquote><p>sudo bash -c &lsquo;echo &rsquo;$HOMEBREW_PREFIX/share/aclocal&#8217; >> <code>/usr/local/devtools/autotools-bin/bin/aclocal --print-ac-dir</code>/dirlist&#8217;</p></blockquote>
+<blockquote><p>bash: aclocal: command not found</p></blockquote>
+
+<p>请加入aclocal的全路径：</p>
+
+<blockquote><p>sudo bash -c &lsquo;echo &rsquo;$HOMEBREW_PREFIX/share/aclocal&#8217; >> `/usr/local/devtools/autotools-bin/bin/aclocal &mdash;print-ac-dir`/dirlist&#8217;</p></blockquote>
 
 <p>configure命令执行通过之后，执行</p>
 
-<p>`make</p>
+<p><code>make</code></p>
 
-<p>sudo make install`</p>
+<p><code>sudo make install</code></p>
 
 <p>最后会在/usr/local/share/java/目录下生成zmq.jar包，在/usr/local/lib目录下生成native lib.</p>
 
