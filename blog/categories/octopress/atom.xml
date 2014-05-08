@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Octopress | Alfred's Blog]]></title>
   <link href="http://365day.github.io/blog/categories/octopress/atom.xml" rel="self"/>
   <link href="http://365day.github.io/"/>
-  <updated>2014-05-08T14:13:42+08:00</updated>
+  <updated>2014-05-08T14:44:29+08:00</updated>
   <id>http://365day.github.io/</id>
   <author>
     <name><![CDATA[GaoChuanjun]]></name>
@@ -12,6 +12,28 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[用Octopress写博客（常用命令）]]></title>
+    <link href="http://365day.github.io/blog/2014/05/08/yong-octopressxie-bo-ke-%28chang-yong-ming-ling-%29/"/>
+    <updated>2014-05-08T14:38:29+08:00</updated>
+    <id>http://365day.github.io/blog/2014/05/08/yong-octopressxie-bo-ke-(chang-yong-ming-ling-)</id>
+    <content type="html"><![CDATA[<h3>用Octopress经常需要用到如下命令：</h3>
+
+<ul>
+<li>rake new_post[’article name‘] 生成博文框架，然后修改生成的文件即可</li>
+<li></li>
+<li>rake generate 生成静态文件</li>
+<li></li>
+<li>rake watch 检测文件变化，实时生成新内容</li>
+<li></li>
+<li>rake preview 在本机4000端口生成访问内容</li>
+<li></li>
+<li>rake deploy 发布文件</li>
+</ul>
+
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[Self-Introduction]]></title>
