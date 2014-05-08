@@ -9,10 +9,7 @@
   <meta name="author" content="GaoChuanjun">
 
   
-  <meta name="description" content="用Octopress经常需要用到如下命令： rake new_post[’article name‘] 生成博文框架，然后修改生成的文件即可
-rake generate 生成静态文件
-rake watch 检测文件变化，实时生成新内容
-rake preview 在本机4000端口生成访问内容 &hellip;">
+  <meta name="description" content="本文旨在帮助Mac OS X下的用户编译jzmq，本文出现的诸多问题也仅仅局限于MAC OS X，在RedHat、CentOS等系统环境下的用户未必会出现此类问题。 jzmq是为Java语言提供的一个可以与ZeroMQ进行通信的链接库。 安装jzmq之前请确认已经部署有JVM环境。 在MAC OS &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -68,6 +65,186 @@ rake preview 在本机4000端口生成访问内容 &hellip;">
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014/05/08/mac-os-xxia-bian-yi-jzmq/">Mac OS X下编译jzmq</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-05-08T18:48:58+08:00" pubdate data-updated="true">May 8<span>th</span>, 2014</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>本文旨在帮助Mac OS X下的用户编译jzmq，本文出现的诸多问题也仅仅局限于MAC OS X，在RedHat、CentOS等系统环境下的用户未必会出现此类问题。</p>
+
+<p>jzmq是为Java语言提供的一个可以与ZeroMQ进行通信的链接库。</p>
+
+<p>安装jzmq之前请确认已经部署有JVM环境。</p>
+
+<p>在MAC OS X下编译jzmq首先需要autotools，autotools环境需要三个lib：autoconf、automake和libtool。</p>
+
+<h6>一、部署autotools环境：</h6>
+
+<p>1、为autotools创建安装目录：本文部署在/usr/local/devtools（可自定义）目录下，最好在环境变量下配置一下该路径，~/.bash_profile，</p>
+
+<p><code>export build=/usr/local/devtools</code></p>
+
+<p>使环境变量生效</p>
+
+<p><code>source ~/.bash_profile</code></p>
+
+<p>2、安装部署autoconf</p>
+
+<p>在<a href="http://mirrors.ustc.edu.cn/gnu/autoconf/">http://mirrors.ustc.edu.cn/gnu/autoconf/</a>目录下下载最新的autoconf，最新版本的命名为autoconf-latest.tar.gz</p>
+
+<p>将autoconf-latest.tar.gz拷贝至$build目录下，解压缩</p>
+
+<blockquote><p>cd $build</p>
+
+<p>tar zxvf autoconf-latest.tar.gz</p>
+
+<p>cd autoconf-latest</p>
+
+<p>./configure &mdash;prefix=$build/autotools-bin</p>
+
+<p>make</p>
+
+<p>make install</p></blockquote>
+
+<p>在~/.bash_profile下添加PATH环境变量</p>
+
+<p><code>export PATH=$PATH:$build/autotools-bin/bin</code></p>
+
+<p>3、安装部署automake</p>
+
+<p>在<a href="http://mirror.bjtu.edu.cn/gnu/automake/">http://mirror.bjtu.edu.cn/gnu/automake/</a>目录下下载最新的automake，最新版本的命名为automake-1.14.tar.gz</p>
+
+<p>将automake-1.14.tar.gz拷贝至$build目录下，解压缩</p>
+
+<blockquote><p>cd $$build</p>
+
+<p>tar zxvf automake-1.14.tar.gz</p>
+
+<p>cd automake-1.14</p>
+
+<p>./configure &mdash;prefix=$build/autotools-bin</p>
+
+<p>make</p>
+
+<p>make install</p></blockquote>
+
+<p>4、安装部署libtool</p>
+
+<p>在<a href="http://mirror.bjtu.edu.cn/gnu/libtool/">http://mirror.bjtu.edu.cn/gnu/libtool/</a>目录下下载最新的libtool，最新版本的命名为libtool-2.4.2.tar.gz</p>
+
+<p>将libtool-2.4.2.tar.gz拷贝至$build目录下，解压缩</p>
+
+<blockquote><p>cd $$build</p>
+
+<p>tar zxvf libtool-2.4.2.tar.gz</p>
+
+<p>cd libtool-2.4.2</p>
+
+<p>./configure &mdash;prefix=$build/autotools-bin</p>
+
+<p>make</p>
+
+<p>make install</p></blockquote>
+
+<h6>二、部署pkg-config</h6>
+
+<p>部署pkg-config可以借助于brew，brew是mac下一个类似于yum,apt-get等之类的工具，如果机器上没有这个命令的，请自行google。</p>
+
+<p><code>brew install pkg-config</code></p>
+
+<p>执行该命令之后pkg-config就自行安装好了，brew默认安装的路径为/usr/local/homebrew/Cellar（此路径根据你在安装brew定义的时候定义的）。</p>
+
+<p>三、部署zeromq</p>
+
+<p>到<a href="http://download.zeromq.org/">http://download.zeromq.org/</a>目录下下载zeromq，建议下载2.2.0版本，下载之后拷贝至/usr/local目录下并进行解压缩</p>
+
+<blockquote><p>tar zxvf zeromq-2.2.0.tar.gz</p>
+
+<p>cd zeromq-2.2.0</p>
+
+<p>./configure &mdash;with-pgm</p>
+
+<p>make</p>
+
+<p>make install</p></blockquote>
+
+<p>四、下载安装jzmq</p>
+
+<p>到<a href="https://github.com/zeromq/jzmq">https://github.com/zeromq/jzmq</a>目录下git出jzmq，然后进入该目录执行如下命令：</p>
+
+<p><code>./autogen.sh</code></p>
+
+<p><code>./configure</code></p>
+
+<p>在执行configure时可能会出现如下问题：</p>
+
+<blockquote><p>autoreconf: Entering directory `.&lsquo;
+autoreconf: configure.in: not using Gettext
+autoreconf: running: aclocal -I config &mdash;force -I config
+aclocal: warning: autoconf input should be named &#8216;configure.ac&rsquo;, not &lsquo;configure.in&rsquo;
+autoreconf: configure.in: tracing
+autoreconf: configure.in: not using Libtool
+autoreconf: running: /usr/local/homebrew/Cellar/autoconf/2.69/bin/autoconf &mdash;include=config &mdash;force
+configure.in:28: error: possibly undefined macro: AC_PROG_LIBTOOL</p>
+
+<pre><code>  If this token and others are legitimate, please use m4_pattern_allow.
+  See the Autoconf documentation.
+</code></pre>
+
+<p>autoreconf: /usr/local/homebrew/Cellar/autoconf/2.69/bin/autoconf failed with exit status: 1
+autogen.sh: error: autoreconf exited with status 0</p></blockquote>
+
+<p>解决方法如下（参考<a href="http://stackoverflow.com/questions/3522248/how-do-i-compile-jzmq-for-zeromq-on-osx">http://stackoverflow.com/questions/3522248/how-do-i-compile-jzmq-for-zeromq-on-osx</a>）：</p>
+
+<p>在控制台下执行如下两行命令：</p>
+
+<blockquote><p>eval <code>brew --config | grep HOMEBREW_PREFIX | sed 's/: /=/'</code></p>
+
+<p>sudo bash -c &lsquo;echo &rsquo;$HOMEBREW_PREFIX/share/aclocal&#8217; >> <code>aclocal --print-ac-dir</code>/dirlist&#8217;</p></blockquote>
+
+<p>如果出现bash: aclocal: command not found的问题，请加入aclocal的全路径：</p>
+
+<blockquote><p>sudo bash -c &lsquo;echo &rsquo;$HOMEBREW_PREFIX/share/aclocal&#8217; >> <code>/usr/local/devtools/autotools-bin/bin/aclocal --print-ac-dir</code>/dirlist&#8217;</p></blockquote>
+
+<p>configure命令执行通过之后，执行</p>
+
+<p>`make</p>
+
+<p>sudo make install`</p>
+
+<p>最后会在/usr/local/share/java/目录下生成zmq.jar包，在/usr/local/lib目录下生成native lib.</p>
+
+<p>在部署过程中，可能还会出现其它问题，一般这些问题均是由缺少某个库引起的，安装相应的库便可解决这些问题。</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -189,6 +366,10 @@ rake preview 在本机4000端口生成访问内容 &hellip;">
     <section>
   <h1>Recent Posts</h1>
   <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2014/05/08/mac-os-xxia-bian-yi-jzmq/">Mac OS X下编译jzmq</a>
+      </li>
     
       <li class="post">
         <a href="/blog/2014/05/08/yong-octopressxie-bo-ke-%28chang-yong-ming-ling-%29/">用Octopress写博客（常用命令）</a>

@@ -1,24 +1,97 @@
-<?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom">
 
-  <title><![CDATA[Alfred's Blog]]></title>
-  <link href="http://365day.github.io/atom.xml" rel="self"/>
-  <link href="http://365day.github.io/"/>
-  <updated>2014-05-08T19:36:38+08:00</updated>
-  <id>http://365day.github.io/</id>
-  <author>
-    <name><![CDATA[GaoChuanjun]]></name>
-    
-  </author>
-  <generator uri="http://octopress.org/">Octopress</generator>
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>Mac OS X下编译jzmq - Alfred's Blog</title>
+  <meta name="author" content="GaoChuanjun">
 
   
-  <entry>
-    <title type="html"><![CDATA[Mac OS X下编译jzmq]]></title>
-    <link href="http://365day.github.io/blog/2014/05/08/mac-os-xxia-bian-yi-jzmq/"/>
-    <updated>2014-05-08T18:48:58+08:00</updated>
-    <id>http://365day.github.io/blog/2014/05/08/mac-os-xxia-bian-yi-jzmq</id>
-    <content type="html"><![CDATA[<p>本文旨在帮助Mac OS X下的用户编译jzmq，本文出现的诸多问题也仅仅局限于MAC OS X，在RedHat、CentOS等系统环境下的用户未必会出现此类问题。</p>
+  <meta name="description" content="本文旨在帮助Mac OS X下的用户编译jzmq，本文出现的诸多问题也仅仅局限于MAC OS X，在RedHat、CentOS等系统环境下的用户未必会出现此类问题。 jzmq是为Java语言提供的一个可以与ZeroMQ进行通信的链接库。 安装jzmq之前请确认已经部署有JVM环境。 在MAC OS &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://365day.github.io/blog/2014/05/08/mac-os-xxia-bian-yi-jzmq">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="Alfred's Blog" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="//fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="//fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">Alfred's Blog</a></h1>
+  
+    <h2>博客，不仅仅是分享，也是一个自我学习的过程——alfred.2014/05/07</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="https://www.google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:365day.github.io" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">Mac OS X下编译jzmq</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-05-08T18:48:58+08:00" pubdate data-updated="true">May 8<span>th</span>, 2014</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>本文旨在帮助Mac OS X下的用户编译jzmq，本文出现的诸多问题也仅仅局限于MAC OS X，在RedHat、CentOS等系统环境下的用户未必会出现此类问题。</p>
 
 <p>jzmq是为Java语言提供的一个可以与ZeroMQ进行通信的链接库。</p>
 
@@ -163,62 +236,100 @@ autogen.sh: error: autoreconf exited with status 0</p></blockquote>
 <p>最后会在/usr/local/share/java/目录下生成zmq.jar包，在/usr/local/lib目录下生成native lib.</p>
 
 <p>在部署过程中，可能还会出现其它问题，一般这些问题均是由缺少某个库引起的，安装相应的库便可解决这些问题。</p>
-]]></content>
-  </entry>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
   
-  <entry>
-    <title type="html"><![CDATA[用Octopress写博客（常用命令）]]></title>
-    <link href="http://365day.github.io/blog/2014/05/08/yong-octopressxie-bo-ke-%28chang-yong-ming-ling-%29/"/>
-    <updated>2014-05-08T14:38:29+08:00</updated>
-    <id>http://365day.github.io/blog/2014/05/08/yong-octopressxie-bo-ke-(chang-yong-ming-ling-)</id>
-    <content type="html"><![CDATA[<h3>用Octopress经常需要用到如下命令：</h3>
 
-<ul>
-<li><p>rake new_post[’article name‘] 生成博文框架，然后修改生成的文件即可</p></li>
-<li><p>rake generate 生成静态文件</p></li>
-<li><p>rake watch 检测文件变化，实时生成新内容</p></li>
-<li><p>rake preview 在本机4000端口生成访问内容</p></li>
-<li><p>rake deploy 发布文件</p></li>
-</ul>
+<span class="byline author vcard">Posted by <span class="fn">GaoChuanjun</span></span>
+
+      
 
 
-<blockquote><p>其它命令详见官网：<a href="http://octopress.org/docs/blogging/">Blogging Basics</a></p></blockquote>
-]]></content>
-  </entry>
+
+
+
+
+
+
   
-  <entry>
-    <title type="html"><![CDATA[Self-Introduction]]></title>
-    <link href="http://365day.github.io/blog/2014/05/07/self-introduction/"/>
-    <updated>2014-05-07T22:56:27+08:00</updated>
-    <id>http://365day.github.io/blog/2014/05/07/self-introduction</id>
-    <content type="html"><![CDATA[<h3># EDUCATION EXPERIENCE：</h3>
-
-<ul>
-<li><h5>###### Bachelor：Nanjing University of Information Science &amp; Technology</h5></li>
-<li><h5>###### Master：China University of Petroleum</h5></li>
-</ul>
 
 
-<h3># WORK EXPERIENCE：</h3>
-
-<ul>
-<li><h5>###### 丁丁网 （2012.06~2012.11）</h5></li>
-<li><h5>###### 大智慧 （2013.03~至今）</h5></li>
-</ul>
+<time datetime="2014-05-08T18:48:58+08:00" pubdate data-updated="true">May 8<span>th</span>, 2014</time>
+      
 
 
-<h3>#### 常用博客地址：</h3>
-
-<ul>
-<li><h5>###### CSDN：<a href="http://blog.csdn.net/gao715108023">http://blog.csdn.net/gao715108023</a></h5></li>
-<li><h5>###### GitHub：<a href="https://github.com/gao715108023">https://github.com/gao715108023</a></h5></li>
-<li><h5>###### 知乎ID：alfred nuist</h5></li>
-<li><h5>###### 果壳网：三俗人</h5>
-
-<p><strong><em> Email：alfred0918@163.com</em></strong></p></li>
-</ul>
-
-]]></content>
-  </entry>
+    </p>
+    
+      <div class="sharing">
   
-</feed>
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2014/05/08/yong-octopressxie-bo-ke-%28chang-yong-ming-ling-%29/" title="Previous Post: 用Octopress写博客（常用命令）">&laquo; 用Octopress写博客（常用命令）</a>
+      
+      
+    </p>
+  </footer>
+</article>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2014/05/08/mac-os-xxia-bian-yi-jzmq/">Mac OS X下编译jzmq</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/05/08/yong-octopressxie-bo-ke-%28chang-yong-ming-ling-%29/">用Octopress写博客（常用命令）</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/05/07/self-introduction/">Self-Introduction</a>
+      </li>
+    
+  </ul>
+</section>
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2014 - GaoChuanjun -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>
