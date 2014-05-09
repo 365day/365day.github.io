@@ -4,7 +4,7 @@
   <title><![CDATA[Alfred's Blog]]></title>
   <link href="http://365day.github.io/atom.xml" rel="self"/>
   <link href="http://365day.github.io/"/>
-  <updated>2014-05-09T14:45:37+08:00</updated>
+  <updated>2014-05-09T14:47:23+08:00</updated>
   <id>http://365day.github.io/</id>
   <author>
     <name><![CDATA[GaoChuanjun]]></name>
@@ -272,7 +272,7 @@ procs_blocked 0
 
 <p><strong>结论1：总的cpu时间totalCpuTime = user + nice + system + idle + iowait + irq + softirq + stealstolen  +  guest</strong></p>
 
-<p><strong>/proc/<pid>/stat文件</strong></p>
+<p><strong>/proc/&lt;pid>/stat文件</strong></p>
 
 <p>该文件包含了某一进程所有的活动的信息，该文件中的所有值都是从系统启动开始累计到当前时刻。以下通过实例数据来说明该文件中各字段的含义。</p>
 
