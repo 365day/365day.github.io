@@ -4,7 +4,7 @@
   <title><![CDATA[Alfred's Blog]]></title>
   <link href="http://365day.github.io/atom.xml" rel="self"/>
   <link href="http://365day.github.io/"/>
-  <updated>2014-05-09T11:04:37+08:00</updated>
+  <updated>2014-05-09T11:06:25+08:00</updated>
   <id>http://365day.github.io/</id>
   <author>
     <name><![CDATA[GaoChuanjun]]></name>
@@ -92,13 +92,13 @@ power management: [8]
 <li><p><strong>查询系统CPU的物理核数</strong>：<code>cat /proc/cpuinfo | grep "cpu cores" | uniq</code></p></li>
 <li><p><strong>查询系统CPU是否启用超线程</strong>：<code>cat /proc/cpuinfo | grep -e "cpu cores"  -e "siblings" | sort | uniq</code></p>
 
-<p> 输出举例：
-  <code>cpu cores    : 4</code>
+<p> 输出举例： <br/>
+  <code>cpu cores    : 4</code> <br/>
   <code>siblings      : 4</code></p></li>
 </ul>
 
 
-<p>　　如果cpu cores数量和siblings数量一致，则没有启用超线程，否则超线程被启用。</p>
+<p>如果cpu cores数量和siblings数量一致，则没有启用超线程，否则超线程被启用。</p>
 
 <ul>
 <li><strong>查询系统CPU的个数：</strong>cat /proc/cpuinfo | grep &ldquo;physical id&rdquo; | sort | uniq | wc -l</li>
