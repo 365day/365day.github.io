@@ -4,7 +4,7 @@
   <title><![CDATA[Alfred's Blog]]></title>
   <link href="http://365day.github.io/atom.xml" rel="self"/>
   <link href="http://365day.github.io/"/>
-  <updated>2014-05-09T10:11:14+08:00</updated>
+  <updated>2014-05-09T10:37:43+08:00</updated>
   <id>http://365day.github.io/</id>
   <author>
     <name><![CDATA[GaoChuanjun]]></name>
@@ -20,160 +20,160 @@
     <id>http://365day.github.io/blog/2014/05/09/xing-neng-ce-shi-jin-jie-zhi-nan-ji-chu-pian-[?]-(xi-tong-zi-yuan-de-jiang-jie-)</id>
     <content type="html"><![CDATA[<p>本文旨在帮助测试人员对性能测试常用指标做一个简单的讲解，主要包括CPU、内存、磁盘和网络带宽等系统资源，本文仅仅局限于Linux系统，Windows Server系统暂不做考虑。</p>
 
-<p>一、系统资源的分析</p>
+<h2>一、系统资源的分析</h2>
 
 <p>Linux下的系统资源主要记录在内核文件/proc中，下面几乎记录了Linux所有的系统信息。</p>
 
-<p>1、CPU</p>
+<h3>1、CPU</h3>
 
-<p>CPU的基本信息在目录cpuinfo下可以查看，基于不同指令集（ISA）的CPU产生的/proc/cpuinfo文件不一样，基于X86指令集CPU的/proc/cpuinfo文件包含如下内容：
-<code>[root@alpha8870 proc]# cat cpuinfo  
-processor       : 0  
-vendor_id       : GenuineIntel  
-cpu family      : 6  
-model           : 45  
-model name      :        Intel(R) Xeon(R) CPU E5-2609 0 @ 2.40GHz  
-stepping        : 7  
-cpu MHz         : 2400.000  
-cache size      : 10240 KB  
-physical id     : 0  
-siblings        : 4  
-core id         : 0  
-cpu cores       : 4  
-apicid          : 0  
-fpu             : yes  
-fpu_exception   : yes  
-cpuid level     : 13  
-wp              : yes  
-flags           : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts mmx fxsr sse sse2 ss ht syscall nx rdtscp lm constant_tsc nonstop_tsc pni cx16 popcnt lahf_lm  
-bogomips        : 4800.00  
-clflush size    : 64  
-cache_alignment : 64  
-address sizes   : 40 bits physical, 48 bits virtual  
-power management: [8] </code>
-以上输出项的含义如下：<br/>
-processor　：系统中逻辑处理核的编号。对于单核处理器，则可认为是其CPU编号，对于多核处理器则可以是物理核、或者使用超线程技术虚拟的逻辑核<br/>
-vendor_id　：CPU制造商    <br/>
-cpu family　：CPU产品系列代号<br/>
-model　　　：CPU属于其系列中的哪一代的代号<br/>
-model name：CPU属于的名字及其编号、标称主频<br/>
-stepping　  ：CPU属于制作更新版本<br/>
-cpu MHz　  ：CPU的实际使用主频<br/>
-cache size   ：CPU二级缓存大小<br/>
-physical id   ：单个CPU的标号<br/>
-siblings       ：单个CPU逻辑物理核数<br/>
-core id        ：当前物理核在其所处CPU中的编号，这个编号不一定连续<br/>
-cpu cores    ：该逻辑核所处CPU的物理核数<br/>
-apicid          ：用来区分不同逻辑核的编号，系统中每个逻辑核的此编号必然不同，此编号不一定连续<br/>
-fpu             ：是否具有浮点运算单元（Floating Point Unit）<br/>
-fpu_exception  ：是否支持浮点计算异常<br/>
-cpuid level   ：执行cpuid指令前，eax寄存器中的值，根据不同的值cpuid指令会返回不同的内容<br/>
-wp             ：表明当前CPU是否在内核态支持对用户空间的写保护（Write Protection）<br/>
-flags          ：当前CPU支持的功能<br/>
-bogomips   ：在系统内核启动时粗略测算的CPU速度（Million Instructions Per Second）<br/>
-clflush size  ：每次刷新缓存的大小单位<br/>
-cache_alignment ：缓存地址对齐单位<br/>
-address sizes     ：可访问地址空间位数<br/>
-power management ：对能源管理的支持，有以下几个可选支持功能：</p>
+<h4>1.1 CPU的文件系统</h4>
 
-<p>　　ts：　　temperature sensor</p>
+<pre><code>CPU的基本信息在目录cpuinfo下可以查看，基于不同指令集（ISA）的CPU产生的/proc/cpuinfo文件不一样，基于X86指令集CPU的/proc/cpuinfo文件包含如下内容：  
+</code></pre>
 
-<p>　　fid：　  frequency id control</p>
+<p><code>[root@alpha8870 proc]# cat cpuinfo </code><br/>
+<code>processor       : 0 </code><br/>
+<code>vendor_id       : GenuineIntel </code><br/>
+<code>cpu family      : 6 </code>
+<code>model           : 45 </code>
+<code>model name      :        Intel(R) Xeon(R) CPU E5-2609 0 @ 2.40GHz</code><br/>
+<code>stepping        : 7</code><br/>
+<code>cpu MHz         : 2400.000</code><br/>
+<code>cache size      : 10240 KB</code><br/>
+<code>physical id     : 0</code><br/>
+<code>siblings        : 4</code><br/>
+<code>core id         : 0</code><br/>
+<code>cpu cores       : 4</code><br/>
+<code>apicid          : 0</code><br/>
+<code>fpu             : yes</code><br/>
+<code>fpu_exception   : yes</code><br/>
+<code>cpuid level     : 13</code><br/>
+<code>wp              : yes</code><br/>
+<code>flags           : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts mmx fxsr sse sse2 ss ht syscall nx rdtscp lm constant_tsc nonstop_tsc pni cx16 popcnt lahf_lm</code>  <br/>
+<code>bogomips        : 4800.00</code><br/>
+<code>clflush size    : 64</code><br/>
+<code>cache_alignment : 64</code><br/>
+<code>address sizes   : 40 bits physical, 48 bits virtual</code><br/>
+<code>power management: [8]</code></p>
 
-<p>　　vid：　 voltage id control</p>
+<h5>以上输出项的含义如下：</h5>
 
-<p>　　ttp：　 thermal trip</p>
+<ul>
+<li>processor　：系统中逻辑处理核的编号。对于单核处理器，则可认为是其CPU编号，对于多核处理器则可以是物理核、或者使用超线程技术虚拟的逻辑核</li>
+<li>vendor_id　：CPU制造商</li>
+<li>cpu family　：CPU产品系列代号</li>
+<li>model　　　：CPU属于其系列中的哪一代的代号</li>
+<li>model name：CPU属于的名字及其编号、标称主频</li>
+<li>stepping　  ：CPU属于制作更新版本</li>
+<li>cpu MHz　  ：CPU的实际使用主频</li>
+<li>cache size   ：CPU二级缓存大小</li>
+<li><strong>physical id   ：单个CPU的标号</strong></li>
+<li>siblings       ：单个CPU逻辑物理核数</li>
+<li>core id        ：当前物理核在其所处CPU中的编号，这个编号不一定连续</li>
+<li><strong>cpu cores    ：该逻辑核所处CPU的物理核数 </strong></li>
+<li>apicid          ：用来区分不同逻辑核的编号，系统中每个逻辑核的此编号必然不同，此编号不一定连续</li>
+<li>fpu             ：是否具有浮点运算单元（Floating Point Unit）</li>
+<li>fpu_exception  ：是否支持浮点计算异常</li>
+<li>cpuid level   ：执行cpuid指令前，eax寄存器中的值，根据不同的值cpuid指令会返回不同的内容</li>
+<li>wp             ：表明当前CPU是否在内核态支持对用户空间的写保护（Write Protection）</li>
+<li>flags          ：当前CPU支持的功能</li>
+<li>bogomips   ：在系统内核启动时粗略测算的CPU速度（Million Instructions Per Second）</li>
+<li>clflush size  ：每次刷新缓存的大小单位</li>
+<li>cache_alignment ：缓存地址对齐单位</li>
+<li>address sizes     ：可访问地址空间位数</li>
+<li><p>power management ：对能源管理的支持，有以下几个可选支持功能：</p>
 
-<p>　　tm：</p>
+<pre><code>  根据以上内容，我们则可以很方便的知道当前系统关于CPU、CPU的核数、CPU是否启用超线程等信息。
+</code></pre></li>
+<li><p><strong>查询系统具有多少个逻辑核</strong>：<code>cat /proc/cpuinfo | grep "processor" | wc -l</code></p></li>
+<li><p><strong>查询系统CPU的物理核数</strong>：<code>cat /proc/cpuinfo | grep "cpu cores" | uniq</code></p></li>
+<li><p><strong>查询系统CPU是否启用超线程</strong>：<code>cat /proc/cpuinfo | grep -e "cpu cores"  -e "siblings" | sort | uniq</code></p></li>
+</ul>
 
-<p>　　stc：</p>
 
-<p>　　100mhzsteps：</p>
+<p>输出举例：</p>
 
-<p>　　hwpstate：<br/>
-根据以上内容，我们则可以很方便的知道当前系统关于CPU、CPU的核数、CPU是否启用超线程等信息。</p>
-
-<p>查询系统具有多少个逻辑核：cat /proc/cpuinfo | grep &ldquo;processor&rdquo; | wc -l</p>
-
-<p>查询系统CPU的物理核数：cat /proc/cpuinfo | grep &ldquo;cpu cores&rdquo; | uniq</p>
-
-<p>查询系统CPU是否启用超线程：cat /proc/cpuinfo | grep -e &ldquo;cpu cores&rdquo;  -e &ldquo;siblings&rdquo; | sort | uniq</p>
-
-<p>　　输出举例：</p>
-
-<p>　　　　cpu cores    : 6
-　　　　siblings    　: 6</p>
+<pre><code>`cpu cores    : 4`
+`siblings      : 4`
+</code></pre>
 
 <p>　　如果cpu cores数量和siblings数量一致，则没有启用超线程，否则超线程被启用。</p>
 
-<p>查询系统CPU的个数：cat /proc/cpuinfo | grep &ldquo;physical id&rdquo; | sort | uniq | wc -l</p>
+<ul>
+<li><strong>查询系统CPU的个数：</strong>cat /proc/cpuinfo | grep &ldquo;physical id&rdquo; | sort | uniq | wc -l</li>
+</ul>
+
 
 <p>查询系统CPU是否支持某项功能，则根以上类似，输出结果进行sort， uniq和grep就可以得到结果。</p>
 
-<p>2、CPU的计算</p>
+<h4>1.2 CPU的计算</h4>
 
 <p>a、TOP命令
 <img src="http://365day.github.io/images/top.png"><br/>
-第一行：<br/>
-09:27:32 当前系统时间<br/>
-18 days, 1:02 系统已经运行了18天1小时2分钟（在这期间没有重启过）<br/>
-5 users 当前有5个用户登录系统<br/>
-load average: 10.19, 15.27, 18.08 load average后面的三个数分别是1分钟、5分钟、15分钟的负载情况。<br/>
+*第一行：<br/>
+<code>09:27:32 当前系统时间</code><br/>
+<code>18 days, 1:02 系统已经运行了18天1小时2分钟（在这期间没有重启过）</code><br/>
+<code>5 users 当前有5个用户登录系统</code><br/>
+<code>load average: 10.19, 15.27, 18.08 load average后面的三个数分别是1分钟、5分钟、15分钟的负载情况。</code><br/>
 load average数据是每隔5秒钟检查一次活跃的进程数，然后按特定算法计算出的数值。如果这个数除以逻辑CPU的数量，结果高于5的时候就表明系统在超负荷运转了。</p>
 
-<p>第二行：<br/>
-Tasks 任务（进程），系统现在共有183个进程，其中处于运行中的有1个，182个在休眠（sleep），stoped状态的有0个，zombie状态（僵尸）的有0个。</p>
+<p>*第二行：<br/>
+<code>Tasks 任务（进程），系统现在共有183个进程，其中处于运行中的有1个，182个在休眠（sleep），stoped状态的有0个，zombie状态（僵尸）的有0个。</code></p>
 
-<p>第三行：cpu状态<br/>
-60.48% us 用户空间占用CPU的百分比。<br/>
-13.5% sy 内核空间占用CPU的百分比。<br/>
-0.0% ni 改变过优先级的进程占用CPU的百分比<br/>
-19.0% id 空闲CPU百分比<br/>
-2.5% wa IO等待占用CPU的百分比<br/>
-0.3% hi 硬中断（Hardware IRQ）占用CPU的百分比<br/>
-4.3% si 软中断（Software Interrupts）占用CPU的百分比<br/>
+<p>*第三行：cpu状态<br/>
+<code>60.48% us 用户空间占用CPU的百分比。</code><br/>
+<code>13.5% sy 内核空间占用CPU的百分比。</code><br/>
+<code>0.0% ni 改变过优先级的进程占用CPU的百分比</code><br/>
+<code>19.0% id 空闲CPU百分比</code><br/>
+<code>2.5% wa IO等待占用CPU的百分比</code><br/>
+<code>0.3% hi 硬中断（Hardware IRQ）占用CPU的百分比</code><br/>
+<code>4.3% si 软中断（Software Interrupts）占用CPU的百分比</code><br/>
 在这里CPU的使用比率和windows概念不同，如果你不理解用户空间和内核空间，需要充充电了。</p>
 
-<p>第四行：内存状态<br/>
-48617324k total 物理内存总量（46GB）<br/>
-46900564k used 使用中的内存总量（44.7GB）<br/>
-1716760k free 空闲内存总量（1.6G）<br/>
-2432120k buffers 缓存的内存量 （2.3G）</p>
+<p>*第四行：内存状态<br/>
+<code>48617324k total 物理内存总量（46GB）</code><br/>
+<code>46900564k used 使用中的内存总量（44.7GB）</code><br/>
+<code>1716760k free 空闲内存总量（1.6G）</code><br/>
+<code>2432120k buffers 缓存的内存量 （2.3G）</code></p>
 
-<p>第五行：swap交换分区
-34996216k total 交换区总量（33GB）
-128k used 使用的交换区总量（128k）
-34996088k free 空闲交换区总量（33GB）
-11883392k cached 缓冲的交换区总量（11GB）</p>
+<p>*第五行：swap交换分区
+<code>34996216k total 交换区总量（33GB）</code>
+<code>128k used 使用的交换区总量（128k）</code>
+<code>34996088k free 空闲交换区总量（33GB）</code>
+<code>11883392k cached 缓冲的交换区总量（11GB）</code></p>
 
 <p>这里要说明的是不能用windows的内存概念理解这些数据。Linux的内存管理有其特殊性，复杂点需要一本书来说明，这里只是简单说点和我们传统概念（windows）的不同。</p>
 
-<p>第四行中使用中的内存总量（used）指的是现在系统内核控制的内存数，空闲内存总量（free）是内核还未纳入其管控范围的数量。纳入内核管理的内存不见得都在使用中，还包括过去使用过的现在可以被重复利用的内存，内核并不把这些可被重新使用的内存交还到free中去，因此在linux上free内存会越来越少，但不用为此担心。<br/>
-如果出于习惯去计算可用内存数，这里有个近似的计算公式：第四行的free + 第四行的buffers + 第五行的cached，按这个公式此台服务器的可用内存：1716760+2432120+11883392 = 15.3GB。</p>
+<blockquote><p><strong>第四行中使用中的内存总量（used）指的是现在系统内核控制的内存数，空闲内存总量（free）是内核还未纳入其管控范围的数量。纳入内核管理的内存不见得都在使用中，还包括过去使用过的现在可以被重复利用的内存，内核并不把这些可被重新使用的内存交还到free中去，因此在linux上free内存会越来越少，但不用为此担心。  </strong><br/>
+  <strong>如果出于习惯去计算可用内存数，这里有个近似的计算公式：第四行的free + 第四行的buffers + 第五行的cached，按这个公式此台服务器的可用内存：1716760+2432120+11883392 = 15.3GB。  </strong></p></blockquote>
 
 <p>对于内存监控，在top里我们要时刻监控第五行swap交换分区的used，如果这个数值在不断的变化，说明内核在不断进行内存和swap的数据交换，这是真正的内存不够用了。</p>
 
-<p>第六行是空行<br/>
-第七行以下：各进程（任务）的状态监控<br/>
-PID 进程id<br/>
-USER 进程所有者<br/>
-PR 进程优先级<br/>
-NI nice值。负值表示高优先级，正值表示低优先级<br/>
-VIRT 进程使用的虚拟内存总量，单位kb。VIRT=SWAP+RES<br/>
-RES 进程使用的、未被换出的物理内存大小，单位kb。RES=CODE+DATA<br/>
-SHR 共享内存大小，单位kb<br/>
-S 进程状态。D=不可中断的睡眠状态 R=运行 S=睡眠 T=跟踪/停止 Z=僵尸进程<br/>
-%CPU 上次更新到现在的CPU时间占用百分比<br/>
-%MEM 进程使用的物理内存百分比<br/>
-TIME+ 进程使用的CPU时间总计，单位1/100秒<br/>
-COMMAND 进程名称（命令名/命令行）<br/>
-多U多核CPU监控
-在top基本视图中，按键盘数字1，可监控每个逻辑CPU的状况：
+<p><em>第六行是空行<br/>
+</em>第七行以下：各进程（任务）的状态监控<br/>
+* PID 进程id<br/>
+* USER 进程所有者<br/>
+* PR 进程优先级<br/>
+* NI nice值。负值表示高优先级，正值表示低优先级<br/>
+* VIRT 进程使用的虚拟内存总量，单位kb。VIRT=SWAP+RES<br/>
+* RES 进程使用的、未被换出的物理内存大小，单位kb。RES=CODE+DATA<br/>
+* SHR 共享内存大小，单位kb<br/>
+* S 进程状态。D=不可中断的睡眠状态 R=运行 S=睡眠 T=跟踪/停止 Z=僵尸进程<br/>
+* %CPU 上次更新到现在的CPU时间占用百分比<br/>
+* %MEM 进程使用的物理内存百分比<br/>
+* TIME+ 进程使用的CPU时间总计，单位1/100秒<br/>
+* COMMAND 进程名称（命令名/命令行）</p>
+
+<h6>多U多核CPU监控</h6>
+
+<p>在top基本视图中，按键盘数字1，可监控每个逻辑CPU的状况：
 <img src="http://365day.github.io/images/top1.png"> <br/>
-观察上图，服务器有8个逻辑CPU，实际上是2个物理CPU。<br/>
-进程字段排序<br/>
-默认进入top时，各进程是按照CPU的占用量来排序的，在上图中进程ID为14613的java进程排在第一（cpu占用390.7%），进程ID为27924的java进程排在第二（cpu占用7.0%）。可通过键盘指令来改变排序字段，比如想监控哪个进程占用MEM最多，我一般的使用方法如下：<br/>
-1. 敲击键盘b（打开/关闭加亮效果），top的视图变化如下：</p>
+观察上图，服务器有8个逻辑CPU，实际上是2个物理CPU。</p>
+
+<h6>进程字段排序</h6>
+
+<p>默认进入top时，各进程是按照CPU的占用量来排序的，在上图中进程ID为14613的java进程排在第一（cpu占用390.7%），进程ID为27924的java进程排在第二（cpu占用7.0%）。可通过键盘指令来改变排序字段，比如想监控哪个进程占用MEM最多，我一般的使用方法如下：<br/>
+<strong>1. 敲击键盘b（打开/关闭加亮效果），top的视图变化如下：</strong></p>
 
 <p><img src="http://365day.github.io/images/top2.png"></p>
 
@@ -185,17 +185,15 @@ COMMAND 进程名称（命令名/命令行）<br/>
 
 <p><img src="http://365day.github.io/images/top4.png"></p>
 
-<ol>
-<li>通过shift + >或shift + &lt;可以向右或左改变排序列，下图是按一次shift + >的效果图：</li>
-</ol>
-
+<p><strong>通过shift + >或shift + &lt;可以向右或左改变排序列，下图是按一次shift + >的效果图：</strong></p>
 
 <p><img src="http://365day.github.io/images/top5.png"></p>
 
 <p>视图现在已经按照%MEM来排序了。</p>
 
-<p>改变进程显示字段<br/>
-1. 敲击f键，top进入另一个视图，在这里可以编排基本视图中的显示字段：</p>
+<h6>改变进程显示字段</h6>
+
+<p><strong>1. 敲击f键，top进入另一个视图，在这里可以编排基本视图中的显示字段：</strong></p>
 
 <p><img src="http://365day.github.io/images/top6.png"></p>
 
@@ -203,26 +201,23 @@ COMMAND 进程名称（命令名/命令行）<br/>
 
 <p><img src="http://365day.github.io/images/top7.png"></p>
 
-<ol>
-<li>回车返回基本视图，可以看到多了CODE和DATA两个字段：</li>
-</ol>
-
+<p><strong>回车返回基本视图，可以看到多了CODE和DATA两个字段：</strong></p>
 
 <p><img src="http://365day.github.io/images/top8.png"></p>
 
 <p>top命令的补充
 top命令是Linux上进行系统监控的首选命令，但有时候却达不到我们的要求，比如当前这台服务器，top监控有很大的局限性。top命令的监控最小单位是进程，所以看不到关心的java线程数和客户连接数，而这两个指标是java的web服务非常重要的指标，通常用ps和netstate两个命令来补充top的不足。</p>
 
-<p>监控java线程数：<br/>
-ps -eLf | grep java | wc -l<br/>
-监控网络客户连接数：<br/>
-netstat -n | grep tcp | grep 侦听端口 | wc -l<br/>
+<p><strong>监控java线程数：</strong><br/>
+<code>ps -eLf | grep java | wc -l </code>
+<strong>监控网络客户连接数：</strong><br/>
+<code>netstat -n | grep tcp | grep 侦听端口 | wc -l</code>
 上面两个命令，可改动grep的参数，来达到更细致的监控要求。  <br/>
 在Linux系统一切都是文件的思想贯彻指导下，所有进程的运行状态都可以用文件来获取。系统根目录/proc中，每一个数字子目录的名字都是运行中的进程的PID，进入任一个进程目录，可通过其中文件或目录来观察进程的各项运行指标，例如task目录就是用来描述进程中线程的，因此也可以通过下面的方法获取某进程中运行中的线程数量（PID指的是进程ID）：</p>
 
-<p>ls /proc/PID/task | wc -l<br/>
+<p><code>ls /proc/PID/task | wc -l </code><br/>
 在linux中还有一个命令pmap，来输出进程内存的状况，可以用来分析线程堆栈：<br/>
-pmap PID</p>
+<code>pmap PID</code></p>
 ]]></content>
   </entry>
   
