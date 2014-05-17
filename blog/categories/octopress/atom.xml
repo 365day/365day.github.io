@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Octopress | Alfred's Blog]]></title>
   <link href="http://365day.github.io/blog/categories/octopress/atom.xml" rel="self"/>
   <link href="http://365day.github.io/"/>
-  <updated>2014-05-09T15:28:46+08:00</updated>
+  <updated>2014-05-17T19:37:10+08:00</updated>
   <id>http://365day.github.io/</id>
   <author>
     <name><![CDATA[GaoChuanjun]]></name>
@@ -14,460 +14,100 @@
 
   
   <entry>
-    <title type="html"><![CDATA[性能测试进阶指南——基础篇一（系统资源的讲解）]]></title>
-    <link href="http://365day.github.io/blog/2014/05/09/xing-neng-ce-shi-jin-jie-zhi-nan-ji-chu-pian-%5B%3F%5D-%28xi-tong-zi-yuan-de-jiang-jie-%29/"/>
-    <updated>2014-05-09T09:04:01+08:00</updated>
-    <id>http://365day.github.io/blog/2014/05/09/xing-neng-ce-shi-jin-jie-zhi-nan-ji-chu-pian-[?]-(xi-tong-zi-yuan-de-jiang-jie-)</id>
-    <content type="html"><![CDATA[<p>本文旨在帮助测试人员对性能测试常用指标做一个简单的讲解，主要包括CPU、内存、磁盘和网络带宽等系统资源，本文仅仅局限于Linux系统，Windows Server系统暂不做考虑。</p>
+    <title type="html"><![CDATA[Linux内核源码详解——命令篇之iostat]]></title>
+    <link href="http://365day.github.io/blog/2014/05/17/linuxnei-he-yuan-ma-xiang-jie-ming-ling-pian-zhi-iostat/"/>
+    <updated>2014-05-17T18:09:20+08:00</updated>
+    <id>http://365day.github.io/blog/2014/05/17/linuxnei-he-yuan-ma-xiang-jie-ming-ling-pian-zhi-iostat</id>
+    <content type="html"><![CDATA[<p>本文主要分析了Linux的iostat命令的源码，iostat的主要功能见博客：<a href="http://www.loveyqq.tk/blog/2014/05/09/xing-neng-ce-shi-jin-jie-zhi-nan-ji-chu-pian-zhi-ci-pan-io/">性能测试进阶指南——基础篇之磁盘IO</a></p>
 
-<h2>一、系统资源的分析</h2>
+<p>iostat源码共563行，应该算是Linux系统命令代码比较少的了。源代码中主要涉及到如下几个Linux的内核文件：</p>
 
-<p>Linux下的系统资源主要记录在内核文件/proc中，下面几乎记录了Linux所有的系统信息。</p>
+<p>1、/proc/diskstats——该文件是内核2.6以上的系统中的，记录了从Linux系统启动之后，所有磁盘的相关信息，该文件中每个参数代表的意义可以自行google或者baidu，或者见博客：<a href="http://blog.csdn.net/tenfyguo/article/details/7477526">/proc/diskstats参数含义</a>。<br/>
+2、/proc/partitions——partitions是2.4版本的系统中的，其含义基本与diskstats一样。<br/>
+3、/proc/stat——stat记录了自系统启动之后，CPU的信息，具体含义可以参考博客：性能测试进阶指南——基础篇一（系统资源的讲解）<br/>
+4、/proc/cpuinfo——iostat主要是从该内核文件中获取cpu的核心数的。</p>
 
-<h3>1、CPU</h3>
+<p>iostat源码解析</p>
 
-<h4>1.1 CPU的文件系统</h4>
+<p>第一步，从/proc/cpuinfo中获取系统的cpu核心数，通过计算该文件中processor出现的次数便可以得到cpu的核心数；</p>
 
-<p>CPU的基本信息在目录cpuinfo下可以查看，基于不同指令集（ISA）的CPU产生的/proc/cpuinfo文件不一样，基于X86指令集CPU的/proc/cpuinfo文件包含如下内容：</p>
+<p>第二步，通过判断文件/proc/diskstats和/proc/partitions是否存在，从而判断linux的内核是2.4版本还是2.6版本：如果/proc/diskstats文件存在，则为2.6版本；否则判断/proc/partitions是否存在，若存在，则为2.4版本；</p>
 
-<pre><code>[root@alpha8870 proc]# cat cpuinfo
-processor       : 0
-vendor_id       : GenuineIntel
-cpu family      : 6
-model           : 45
-model name      :        Intel(R) Xeon(R) CPU E5-2609 0 @ 2.40GHz
-stepping        : 7
-cpu MHz         : 2400.000
-cache size      : 10240 KB
-physical id     : 0
-siblings        : 4
-core id         : 0
-cpu cores       : 4
-apicid          : 0
-fpu             : yes
-fpu_exception   : yes
-cpuid level     : 13
-wp              : yes
-flags           : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts mmx fxsr sse sse2 ss ht syscall nx rdtscp lm constant_tsc nonstop_tsc pni cx16 popcnt lahf_lm
-bogomips        : 4800.00
-clflush size    : 64
-cache_alignment : 64
-address sizes   : 40 bits physical, 48 bits virtual
-power management: [8]
+<p>第三部，分析iostat命令输入的参数，每个参数的功能可以在上一篇博客中找到：<a href="http://www.loveyqq.tk/blog/2014/05/09/xing-neng-ce-shi-jin-jie-zhi-nan-ji-chu-pian-zhi-ci-pan-io/">性能测试进阶指南——基础篇之磁盘IO</a></p>
+
+<p>第四步，初始化，获取磁盘名称。以内核2.6为例，读取文件/proc/diskstats<br/>
+<code>104    0 cciss/c0d0 49787 19805 1597284 159946 20172754 28596938 390157514 1583532 0 1352168 1737502</code><br/>
+第一个参数104和第二个参数0分别代表了major和minor，major是8的倍数，minor是16的倍数，只要同时符合这两个的条件，其对应的第三个参数cciss/c0d0便是所需要获取的磁盘名称；</p>
+
+<p>第五步，进入主循环：</p>
+
+<p>(1) 获取/proc/diskstats中每个磁盘的数据，例如：<br/>
+<code>104    0 cciss/c0d0 49787 19805 1597284 159946 20172754 28596938 390157514 1583532 0 1352168 1737502</code><br/>
+每个参数对应的值为
+104——major<br/>
+0——minor<br/>
+49787——rd_ios<br/>
+19805——rd_merges<br/>
+1597284——rd_sectors<br/>
+159946——rd_ticks<br/>
+20172754——wr_ios<br/>
+28596938——wr_merges<br/>
+390157514——wr_sectors<br/>
+1583532——wr_ticks<br/>
+1352168——ticks<br/>
+1737502——aveq</p>
+
+<p>(2) 获取/proc/stat中的数据，计算cpu的平均时间：分别获取cpu的user时间，nice时间，system时间，idle时间，iowait时间。计算中将nice时间并入user时间，将irq时间和softirq时间并入system时间。此处只计算cpu的平均和状态，不计算每隔核单独的状态。</p>
+
+<p>(3)计算deltams时间，其中HZ是Linux的系统频率。
+<code>deltams = 1000.0 * ((new_cpu.user + new_cpu.system + new_cpu.idle + new_cpu.iowait) - (old_cpu.user + old_cpu.system + old_cpu.idle + old_cpu.iowait)) / ncpu / HZ;</code></p>
+
+<p>(4)计算IO</p>
+
+<pre><code>blkio.rd_ios = new_blkio[p].rd_ios - old_blkio[p].rd_ios;
+blkio.rd_merges = new_blkio[p].rd_merges - old_blkio[p].rd_merges;
+blkio.rd_sectors = new_blkio[p].rd_sectors - old_blkio[p].rd_sectors;
+blkio.rd_ticks = new_blkio[p].rd_ticks - old_blkio[p].rd_ticks;
+blkio.wr_ios = new_blkio[p].wr_ios - old_blkio[p].wr_ios;
+blkio.wr_merges = new_blkio[p].wr_merges - old_blkio[p].wr_merges; 
+blkio.wr_sectors = new_blkio[p].wr_sectors - old_blkio[p].wr_sectors;
+blkio.wr_ticks = new_blkio[p].wr_ticks - old_blkio[p].wr_ticks;
+blkio.ticks = new_blkio[p].ticks - old_blkio[p].ticks;
+blkio.aveq = new_blkio[p].aveq - old_blkio[p].aveq;
+n_ios  = blkio.rd_ios + blkio.wr_ios;
+n_ticks = blkio.rd_ticks + blkio.wr_ticks;
+n_kbytes = (blkio.rd_sectors + blkio.wr_sectors) / 2.0;
+queue = blkio.aveq / deltams;
+size = n_ios ? n_kbytes / n_ios : 0.0;
+wait = n_ios ? n_ticks / n_ios : 0.0;
+svc_t = n_ios ? blkio.ticks / n_ios : 0.0;
+busy = 100.0 * blkio.ticks / deltams; 
+if (busy &gt; 100.0) busy = 100.0;
 </code></pre>
 
-<h5>以上输出项的含义如下：</h5>
+<p>rd_sectors和wr_sectors是扇区数，如果需要换算成KB等单位，需要除以2，1KB=2*512Bytes。512Bytes为1个扇区数。</p>
 
-<ul>
-<li><strong>processor　：系统中逻辑处理核的编号。对于单核处理器，则可认为是其CPU编号，对于多核处理器则可以是物理核、或者使用超线程技术虚拟的逻辑核 </strong></li>
-<li>vendor_id　：CPU制造商</li>
-<li>cpu family　：CPU产品系列代号</li>
-<li>model　　　：CPU属于其系列中的哪一代的代号</li>
-<li>model name：CPU属于的名字及其编号、标称主频</li>
-<li>stepping　  ：CPU属于制作更新版本</li>
-<li>cpu MHz　  ：CPU的实际使用主频</li>
-<li>cache size   ：CPU二级缓存大小</li>
-<li><strong>physical id   ：单个CPU的标号</strong></li>
-<li>siblings       ：单个CPU逻辑物理核数</li>
-<li>core id        ：当前物理核在其所处CPU中的编号，这个编号不一定连续</li>
-<li><strong>cpu cores    ：该逻辑核所处CPU的物理核数 </strong></li>
-<li>apicid          ：用来区分不同逻辑核的编号，系统中每个逻辑核的此编号必然不同，此编号不一定连续</li>
-<li>fpu             ：是否具有浮点运算单元（Floating Point Unit）</li>
-<li>fpu_exception  ：是否支持浮点计算异常</li>
-<li>cpuid level   ：执行cpuid指令前，eax寄存器中的值，根据不同的值cpuid指令会返回不同的内容</li>
-<li>wp             ：表明当前CPU是否在内核态支持对用户空间的写保护（Write Protection）</li>
-<li>flags          ：当前CPU支持的功能</li>
-<li>bogomips   ：在系统内核启动时粗略测算的CPU速度（Million Instructions Per Second）</li>
-<li>clflush size  ：每次刷新缓存的大小单位</li>
-<li>cache_alignment ：缓存地址对齐单位</li>
-<li>address sizes     ：可访问地址空间位数</li>
-<li>power management ：对能源管理的支持，有以下几个可选支持功能：</li>
-</ul>
+<p>(5)计算CPU</p>
 
-
-<p>根据以上内容，我们则可以很方便的知道当前系统关于CPU、CPU的核数、CPU是否启用超线程等信息。</p>
-
-<ul>
-<li><p><strong>查询系统具有多少个逻辑核</strong>：<code>cat /proc/cpuinfo | grep "processor" | wc -l</code></p></li>
-<li><p><strong>查询系统CPU的物理核数</strong>：<code>cat /proc/cpuinfo | grep "cpu cores" | uniq</code></p></li>
-<li><p><strong>查询系统CPU是否启用超线程</strong>：<code>cat /proc/cpuinfo | grep -e "cpu cores"  -e "siblings" | sort | uniq</code></p>
-
-<p> 输出举例： <br/>
-  <code>cpu cores    : 4</code> <br/>
-  <code>siblings      : 4</code></p></li>
-</ul>
-
-
-<p>如果cpu cores数量和siblings数量一致，则没有启用超线程，否则超线程被启用。</p>
-
-<ul>
-<li><strong>查询系统CPU的个数：</strong>cat /proc/cpuinfo | grep &ldquo;physical id&rdquo; | sort | uniq | wc -l</li>
-</ul>
-
-
-<p>查询系统CPU是否支持某项功能，则根以上类似，输出结果进行sort， uniq和grep就可以得到结果。</p>
-
-<h4>1.2 CPU的计算</h4>
-
-<p>a TOP命令</p>
-
-<p><img src="/images/top.png"></p>
-
-<p>*第一行：<br/>
-<code>09:27:32 当前系统时间</code><br/>
-<code>18 days, 1:02 系统已经运行了18天1小时2分钟（在这期间没有重启过）</code><br/>
-<code>5 users 当前有5个用户登录系统</code><br/>
-<code>load average: 10.19, 15.27, 18.08 load average后面的三个数分别是1分钟、5分钟、15分钟的负载情况。</code><br/>
-load average数据是每隔5秒钟检查一次活跃的进程数，然后按特定算法计算出的数值。如果这个数除以逻辑CPU的数量，结果高于5的时候就表明系统在超负荷运转了。</p>
-
-<p>*第二行：<br/>
-<code>Tasks 任务（进程），系统现在共有183个进程，其中处于运行中的有1个，182个在休眠（sleep），stoped状态的有0个，zombie状态（僵尸）的有0个。</code></p>
-
-<p>*第三行：cpu状态<br/>
-<code>60.48% us 用户空间占用CPU的百分比。</code><br/>
-<code>13.5% sy 内核空间占用CPU的百分比。</code><br/>
-<code>0.0% ni 改变过优先级的进程占用CPU的百分比</code><br/>
-<code>19.0% id 空闲CPU百分比</code><br/>
-<code>2.5% wa IO等待占用CPU的百分比</code><br/>
-<code>0.3% hi 硬中断（Hardware IRQ）占用CPU的百分比</code><br/>
-<code>4.3% si 软中断（Software Interrupts）占用CPU的百分比</code><br/>
-在这里CPU的使用比率和windows概念不同，如果你不理解用户空间和内核空间，需要充充电了。</p>
-
-<p>*第四行：内存状态<br/>
-<code>48617324k total 物理内存总量（46GB）</code><br/>
-<code>46900564k used 使用中的内存总量（44.7GB）</code><br/>
-<code>1716760k free 空闲内存总量（1.6G）</code><br/>
-<code>2432120k buffers 缓存的内存量 （2.3G）</code></p>
-
-<p>*第五行：swap交换分区
-<code>34996216k total 交换区总量（33GB）</code>
-<code>128k used 使用的交换区总量（128k）</code>
-<code>34996088k free 空闲交换区总量（33GB）</code>
-<code>11883392k cached 缓冲的交换区总量（11GB）</code></p>
-
-<p>这里要说明的是不能用windows的内存概念理解这些数据。Linux的内存管理有其特殊性，复杂点需要一本书来说明，这里只是简单说点和我们传统概念（windows）的不同。</p>
-
-<blockquote><p><strong>第四行中使用中的内存总量（used）指的是现在系统内核控制的内存数，空闲内存总量（free）是内核还未纳入其管控范围的数量。纳入内核管理的内存不见得都在使用中，还包括过去使用过的现在可以被重复利用的内存，内核并不把这些可被重新使用的内存交还到free中去，因此在linux上free内存会越来越少，但不用为此担心。  </strong><br/>
-  <strong>如果出于习惯去计算可用内存数，这里有个近似的计算公式：第四行的free + 第四行的buffers + 第五行的cached，按这个公式此台服务器的可用内存：1716760+2432120+11883392 = 15.3GB。  </strong></p></blockquote>
-
-<p>对于内存监控，在top里我们要时刻监控第五行swap交换分区的used，如果这个数值在不断的变化，说明内核在不断进行内存和swap的数据交换，这是真正的内存不够用了。</p>
-
-<p>*第六行是空行</p>
-
-<p>*第七行以下：各进程（任务）的状态监控<br/>
-* PID 进程id<br/>
-* USER 进程所有者<br/>
-* PR 进程优先级<br/>
-* NI nice值。负值表示高优先级，正值表示低优先级<br/>
-* VIRT 进程使用的虚拟内存总量，单位kb。VIRT=SWAP+RES<br/>
-* RES 进程使用的、未被换出的物理内存大小，单位kb。RES=CODE+DATA<br/>
-* SHR 共享内存大小，单位kb<br/>
-* S 进程状态。D=不可中断的睡眠状态 R=运行 S=睡眠 T=跟踪/停止 Z=僵尸进程<br/>
-* %CPU 上次更新到现在的CPU时间占用百分比<br/>
-* %MEM 进程使用的物理内存百分比<br/>
-* TIME+ 进程使用的CPU时间总计，单位1/100秒<br/>
-* COMMAND 进程名称（命令名/命令行）</p>
-
-<h6>多U多核CPU监控</h6>
-
-<p>在top基本视图中，按键盘数字1，可监控每个逻辑CPU的状况：</p>
-
-<p><img src="/images/top1.png"></p>
-
-<p>观察上图，服务器有8个逻辑CPU，实际上是2个物理CPU。</p>
-
-<h6>进程字段排序</h6>
-
-<p>默认进入top时，各进程是按照CPU的占用量来排序的，在上图中进程ID为14613的java进程排在第一（cpu占用390.7%），进程ID为27924的java进程排在第二（cpu占用7.0%）。可通过键盘指令来改变排序字段，比如想监控哪个进程占用MEM最多，我一般的使用方法如下：</p>
-
-<p><strong>1. 敲击键盘b（打开/关闭加亮效果），top的视图变化如下：</strong></p>
-
-<p><img src="/images/top2.png"></p>
-
-<p>我们发现进程id为16899的top进程被加亮了，top进程就是视图第二行显示的唯一的运行态（runing）的那个进程，可以通过敲击y键关闭或打开运行态进程的加亮效果。</p>
-
-<p><img src="/images/top3.png"></p>
-
-<p>可以看到，top默认的排序列是%CPU。</p>
-
-<p><img src="/images/top4.png"></p>
-
-<p><strong>通过shift + >或shift + &lt;可以向右或左改变排序列，下图是按一次shift + >的效果图：</strong></p>
-
-<p><img src="/images/top5.png"></p>
-
-<p>视图现在已经按照%MEM来排序了。</p>
-
-<h6>改变进程显示字段</h6>
-
-<p><strong>1. 敲击f键，top进入另一个视图，在这里可以编排基本视图中的显示字段：</strong></p>
-
-<p><img src="/images/top6.png"></p>
-
-<p>这里列出了所有可在top基本视图中显示的进程字段，有*并且标注为大写字母的字段是可显示的，没有*并且是小写字母的字段是不显示的。如果要在基本视图中显示CODE和DATA两个字段，可以通过敲击r和s键：</p>
-
-<p><img src="/images/top7.png"></p>
-
-<p><strong>回车返回基本视图，可以看到多了CODE和DATA两个字段：</strong></p>
-
-<p><img src="/images/top8.png"></p>
-
-<p>top命令的补充</p>
-
-<p>top命令是Linux上进行系统监控的首选命令，但有时候却达不到我们的要求，比如当前这台服务器，top监控有很大的局限性。top命令的监控最小单位是进程，所以看不到关心的java线程数和客户连接数，而这两个指标是java的web服务非常重要的指标，通常用ps和netstate两个命令来补充top的不足。</p>
-
-<p><strong>监控java线程数：</strong><br/>
-<code>ps -eLf | grep java | wc -l </code></p>
-
-<p><strong>监控网络客户连接数：</strong><br/>
-<code>netstat -n | grep tcp | grep 侦听端口 | wc -l</code></p>
-
-<p>上面两个命令，可改动grep的参数，来达到更细致的监控要求。</p>
-
-<p>在Linux系统一切都是文件的思想贯彻指导下，所有进程的运行状态都可以用文件来获取。系统根目录/proc中，每一个数字子目录的名字都是运行中的进程的PID，进入任一个进程目录，可通过其中文件或目录来观察进程的各项运行指标，例如task目录就是用来描述进程中线程的，因此也可以通过下面的方法获取某进程中运行中的线程数量（PID指的是进程ID）：<br/>
-<code>ls /proc/PID/task | wc -l </code></p>
-
-<p>在linux中还有一个命令pmap，来输出进程内存的状况，可以用来分析线程堆栈：<br/>
-<code>pmap PID</code></p>
-
-<h5>b CPU使用率的计算</h5>
-
-<p><strong>/proc/stat文件</strong></p>
-
-<p>该文件包含了所有CPU活动的信息，该文件中的所有值都是从系统启动开始累计到当前时刻。不同内核版本中该文件的格式可能不大一致，以下通过实例来说明数据该文件中各字段的含义。实例数据：2.6.18-164.el5版本上的</p>
-
-<pre><code>cpu  354452949 16260 60331937 380649864 4361825 1248983 9367391 0
-cpu0 38204143 1070 7122259 53682412 638525 46222 141618 0
-cpu1 42667515 2209 7720403 48255130 605091 0 106222 0
-cpu2 46253571 1199 8501463 43893118 588902 19 106925 0
-cpu3 47755506 935 8960373 41907018 579979 734 109005 0
-cpu4 37011661 2915 7258339 51363615 472962 327902 5318893 0
-cpu5 46282988 3828 7216415 49389385 597243 0 126783 0
-cpu6 49721915 2594 7962514 45251453 559504 167 128630 0
-cpu7 46555646 1506 5590168 46907728 319617 873936 3329313 0
-intr 2347835587 1023833604 9 0 3 3 0 5 0 1 0 0 0 115 0 13945415 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 142398948 0 0 0 0 0 0 0 1167657484 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-ctxt 5406149033
-btime 1398039911
-processes 2852119
-procs_running 5
-procs_blocked 0
+<pre><code>cpu.user = new_cpu.user - old_cpu.user;
+cpu.system = new_cpu.system - old_cpu.system;
+cpu.idle = new_cpu.idle - old_cpu.idle;
+cpu.iowait = new_cpu.iowait - old_cpu.iowait;
+total = (cpu.user + cpu.system + cpu.idle + cpu.iowait) / 100.0;
+printf("%3.0f %3.0f ", cpu.user / total, cpu.system / total);
+if (kernel == 6) printf("%3.0f ", cpu.iowait / total);
+printf("%3.0f", cpu.idle / total);
 </code></pre>
 
-<p>第一行的数值表示的是CPU总的使用情况，所以我们只要用第一行的数字计算就可以了。下表解析第一行各数值的含义：</p>
+<p>(6) Save old stats：</p>
 
-<p>参数          解析（单位：jiffies）</p>
-
-<blockquote><p>(jiffies是内核中的一个全局变量，用来记录自系统启动一来产生的节拍数，在linux中，一个节拍大致可理解为操作系统进程调度的最小时间片，不同linux内核可能值有不同，通常在1ms到10ms之间)</p></blockquote>
-
-<ul>
-<li><p>user (354452949)    从系统启动开始累计到当前时刻，处于用户态的运行时间，不包含 nice值为负进程。</p></li>
-<li><p>nice (16260)      从系统启动开始累计到当前时刻，nice值为负的进程所占用的CPU时间</p></li>
-<li><p>system (60331937)  从系统启动开始累计到当前时刻，处于核心态的运行时间</p></li>
-<li><p>idle (380649864)   从系统启动开始累计到当前时刻，除IO等待时间以外的其它等待时间iowait (12256) 从系统启动开始累计到当前时刻，IO等待时间(since 2.5.41)</p></li>
-<li><p>irq (4361825)           从系统启动开始累计到当前时刻，硬中断时间(since 2.6.0-test4)</p></li>
-<li><p>softirq (1248983)      从系统启动开始累计到当前时刻，软中断时间(since 2.6.0-test4)stealstolen(0)                   which is the time spent in other operating systems when running in a virtualized environment(since 2.6.11)</p></li>
-<li><p>guest(9367391)         which is the time spent running a virtual  CPU  for  guest operating systems under the control of the Linux kernel(since 2.6.24)</p></li>
-</ul>
-
-
-<p><strong>结论1：总的cpu时间totalCpuTime = user + nice + system + idle + iowait + irq + softirq + stealstolen  +  guest</strong></p>
-
-<p><strong>/proc/&lt;pid>/stat文件</strong></p>
-
-<p>该文件包含了某一进程所有的活动的信息，该文件中的所有值都是从系统启动开始累计到当前时刻。以下通过实例数据来说明该文件中各字段的含义。</p>
-
-<pre><code>[root@alpha8870 lib]# cat /proc/20738/stat
-20738 (java) S 1 20730 20615 34827 20615 4202496 13527950 0 2442 0 2593008 426148 0 0 22 0 1405 0 156378640 60392562688 6497342 18446744073709551615 4194304 4196484 140737061833664 18446744073709551615 243481475045 0 0 2 16800973 18446744073709551615 0 0 17 5 0 0 0
+<pre><code>old_blkio[p] = new_blkio[p];
+old_cpu = new_cpu;
 </code></pre>
 
-<p>说明：以下只解释对我们计算Cpu使用率有用相关参数</p>
+<p>每隔采样时间循环执行第五步。</p>
 
-<p>参数                                                                解释</p>
-
-<p>pid=20738                            进程号</p>
-
-<p>comm=(java)                 应用程序或命令的名字</p>
-
-<p>task_state=S                    任务的状态：R is running, S is sleeping, D is sleeping in an uninterruptible wait, Z is zombie, T is traced or stopped</p>
-
-<p>ppid=1                      父进程ID</p>
-
-<p>pgid=20730                  线程组号</p>
-
-<p>sid=20615                   该任务所在的会话组ID</p>
-
-<p>tty_nr=34827                    该任务的tty终端的设备号，INT（34817/256）=主设备号，（34817-主设备号）=次设备号</p>
-
-<p>tty_pgrp=20615              终端的进程组号，当前运行在该任务所在终端的前台任务(包括shell 应用程序)的PID。</p>
-
-<p>task->flags=4202496         进程标志位，查看该任务的特性</p>
-
-<p>min_flt=13527950                该任务不需要从硬盘拷数据而发生的缺页（次缺页）的次数</p>
-
-<p>cmin_flt=0                  累计的该任务的所有的waited-for进程曾经发生的次缺页的次数目</p>
-
-<p>maj_flt=2442                    该任务需要从硬盘拷数据而发生的缺页（主缺页）的次数</p>
-
-<p>cmaj_flt=0                  累计的该任务的所有的waited-for进程曾经发生的主缺页的次数目</p>
-
-<p><strong>utime=2593008             该任务在用户态运行的时间，单位为jiffies</strong></p>
-
-<p><strong>stime=426148                  该任务在核心态运行的时间，单位为jiffies</strong></p>
-
-<p><strong>cutime=0                      累计的该任务的所有的waited-for进程曾经在用户态运行的时间，单位为jiffies</strong></p>
-
-<p><strong>cstime=0                      累计的该任务的所有的waited-for进程曾经在核心态运行的时间，单位为jiffies</strong></p>
-
-<p>priority=22                 任务的动态优先级</p>
-
-<p>nice=0                      任务的静态优先级</p>
-
-<p>num_threads=1405                该任务所在的线程组里线程的个数</p>
-
-<p>it_real_value=0 由于计时间隔导致的下一个 SIGALRM 发送进程的时延，以 jiffy 为单位.</p>
-
-<p>start_time=5882654 该任务启动的时间，单位为jiffies</p>
-
-<p>vsize=1409024（page） 该任务的虚拟地址空间大小</p>
-
-<p>rss=56(page) 该任务当前驻留物理地址空间的大小。Number of pages the process has in real memory,minu 3 for administrative purpose.这些页可能用于代码，数据和栈。</p>
-
-<p>rlim=4294967295（bytes） 该任务能驻留物理地址空间的最大值</p>
-
-<p>start_code=134512640 该任务在虚拟地址空间的代码段的起始地址</p>
-
-<p>end_code=134513720 该任务在虚拟地址空间的代码段的结束地址</p>
-
-<p>start_stack=3215579040 该任务在虚拟地址空间的栈的结束地址</p>
-
-<p>kstkesp=0 esp(32 位堆栈指针) 的当前值, 与在进程的内核堆栈页得到的一致.</p>
-
-<p>kstkeip=2097798 指向将要执行的指令的指针, EIP(32 位指令指针)的当前值.</p>
-
-<p>pendingsig=0 待处理信号的位图，记录发送给进程的普通信号</p>
-
-<p>block_sig=0 阻塞信号的位图</p>
-
-<p>sigign=0 忽略的信号的位图</p>
-
-<p>sigcatch=082985 被俘获的信号的位图</p>
-
-<p>wchan=0 如果该进程是睡眠状态，该值给出调度的调用点</p>
-
-<p>nswap 被swapped的页数，当前没用</p>
-
-<p>cnswap 所有子进程被swapped的页数的和，当前没用</p>
-
-<p>exit_signal=17 该进程结束时，向父进程所发送的信号</p>
-
-<p>task_cpu(task)=0 运行在哪个CPU上</p>
-
-<p>task_rt_priority=0 实时进程的相对优先级别</p>
-
-<p>task_policy=0 进程的调度策略，0=非实时进程，1=FIFO实时进程；2=RR实时进程</p>
-
-<p><strong>结论2：进程的总Cpu时间processCpuTime = utime + stime + cutime + cstime，该值包括其所有线程的cpu时间。</strong></p>
-
-<h5>单核情况下Cpu使用率的计算</h5>
-
-<h6>基本思想</h6>
-
-<p>通过读取/proc/stat 、/proc/<pid>/stat以及/proc/cpuinfo这几个文件获取总的Cpu时间、进程的Cpu时间以及Cpu的个数的信息，然后通过一定的算法进行计算(采样两个足够短的时间间隔的Cpu快照与进程快照来计算进程的Cpu使用率)。</p>
-
-<p><strong>总的Cpu使用率计算</strong></p>
-
-<p>计算方法：</p>
-
-<p>1、 采样两个足够短的时间间隔的Cpu快照，分别记作t1,t2，其中t1、t2的结构均为：
-(user、nice、system、idle、iowait、irq、softirq、stealstolen、guest)的9元组;</p>
-
-<p>2、  计算总的Cpu时间片totalCpuTime</p>
-
-<p>a)     把第一次的所有cpu使用情况求和，得到s1;</p>
-
-<p>b)     把第二次的所有cpu使用情况求和，得到s2;</p>
-
-<p>c)     s2 &ndash; s1得到这个时间间隔内的所有时间片，即totalCpuTime = j2 &ndash; j1 ;</p>
-
-<p>3、计算空闲时间idle</p>
-
-<p>idle对应第四列的数据，用第二次的第四列-第一次的第四列即可</p>
-
-<p>idle=第二次的第四列-第一次的第四列</p>
-
-<p>6、计算cpu使用率</p>
-
-<p>pcpu =100* (total-idle)/total</p>
-
-<p><strong>某一进程Cpu使用率的计算</strong></p>
-
-<p>计算方法：</p>
-
-<p>1． 采样两个足够短的时间间隔的cpu快照与进程快照，</p>
-
-<p>a)  每一个cpu快照均为(user、nice、system、idle、iowait、irq、softirq、stealstolen、guest)的9元组;</p>
-
-<p>b)  每一个进程快照均为 (utime、stime、cutime、cstime)的4元组；</p>
-
-<p>2．分别根据结论1、结论2计算出两个时刻的总的cpu时间与进程的cpu时间，分别记作：totalCpuTime1、totalCpuTime2、processCpuTime1、processCpuTime2</p>
-
-<p>3．计算该进程的cpu使用率pcpu = 100*( processCpuTime2 – processCpuTime1) / (totalCpuTime2 – totalCpuTime1) (按100%计算，如果是多核情况下还需乘以cpu的个数);</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[用Octopress写博客（常用命令）]]></title>
-    <link href="http://365day.github.io/blog/2014/05/08/yong-octopressxie-bo-ke-%28chang-yong-ming-ling-%29/"/>
-    <updated>2014-05-08T14:38:29+08:00</updated>
-    <id>http://365day.github.io/blog/2014/05/08/yong-octopressxie-bo-ke-(chang-yong-ming-ling-)</id>
-    <content type="html"><![CDATA[<h3>用Octopress经常需要用到如下命令：</h3>
-
-<ul>
-<li><p>rake new_post[’article name‘] 生成博文框架，然后修改生成的文件即可</p></li>
-<li><p>rake generate 生成静态文件</p></li>
-<li><p>rake watch 检测文件变化，实时生成新内容</p></li>
-<li><p>rake preview 在本机4000端口生成访问内容</p></li>
-<li><p>rake deploy 发布文件</p></li>
-</ul>
-
-
-<blockquote><p>其它命令详见官网：<a href="http://octopress.org/docs/blogging/">Blogging Basics</a></p></blockquote>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[Self-Introduction]]></title>
-    <link href="http://365day.github.io/blog/2014/05/07/self-introduction/"/>
-    <updated>2014-05-07T22:56:27+08:00</updated>
-    <id>http://365day.github.io/blog/2014/05/07/self-introduction</id>
-    <content type="html"><![CDATA[<h3># EDUCATION EXPERIENCE：</h3>
-
-<ul>
-<li><h5>###### Bachelor：Nanjing University of Information Science &amp; Technology</h5></li>
-<li><h5>###### Master：China University of Petroleum</h5></li>
-</ul>
-
-
-<h3># WORK EXPERIENCE：</h3>
-
-<ul>
-<li><h5>###### 丁丁网 （2012.06~2012.11）</h5></li>
-<li><h5>###### 大智慧 （2013.03~至今）</h5></li>
-</ul>
-
-
-<h3>#### 常用博客地址：</h3>
-
-<ul>
-<li><h5>###### CSDN：<a href="http://blog.csdn.net/gao715108023">http://blog.csdn.net/gao715108023</a></h5></li>
-<li><h5>###### GitHub：<a href="https://github.com/gao715108023">https://github.com/gao715108023</a></h5></li>
-<li><h5>###### 知乎ID：alfred nuist</h5></li>
-<li><h5>###### 果壳网：三俗人</h5></li>
-<li><h5>###### 摄影新手Instagram账户：gao715108023</h5>
-
-<p><strong><em> Email：alfred0918@163.com</em></strong></p></li>
-</ul>
-
+<p>从源码中可以看出，第一次获取的时候，是没有old stats的，所有的old stats值均为0，即iostat在第一次输出的值为Linux启动之后至当前时间的一个平均状态值，在之后的输出值则为系统当前的实时磁盘I/O信息和CPU信息。</p>
 ]]></content>
   </entry>
   
