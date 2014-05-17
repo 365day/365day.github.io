@@ -4,7 +4,7 @@
   <title><![CDATA[Alfred's Blog]]></title>
   <link href="http://365day.github.io/atom.xml" rel="self"/>
   <link href="http://365day.github.io/"/>
-  <updated>2014-05-17T19:37:10+08:00</updated>
+  <updated>2014-05-17T19:44:08+08:00</updated>
   <id>http://365day.github.io/</id>
   <author>
     <name><![CDATA[GaoChuanjun]]></name>
@@ -22,47 +22,60 @@
 
 <p>iostat源码共563行，应该算是Linux系统命令代码比较少的了。源代码中主要涉及到如下几个Linux的内核文件：</p>
 
-<p>1、/proc/diskstats——该文件是内核2.6以上的系统中的，记录了从Linux系统启动之后，所有磁盘的相关信息，该文件中每个参数代表的意义可以自行google或者baidu，或者见博客：<a href="http://blog.csdn.net/tenfyguo/article/details/7477526">/proc/diskstats参数含义</a>。<br/>
-2、/proc/partitions——partitions是2.4版本的系统中的，其含义基本与diskstats一样。<br/>
-3、/proc/stat——stat记录了自系统启动之后，CPU的信息，具体含义可以参考博客：性能测试进阶指南——基础篇一（系统资源的讲解）<br/>
-4、/proc/cpuinfo——iostat主要是从该内核文件中获取cpu的核心数的。</p>
+<ul>
+<li>1、<strong>/proc/diskstats</strong>——该文件是内核2.6以上的系统中的，记录了从Linux系统启动之后，所有磁盘的相关信息，该文件中每个参数代表的意义可以自行google或者baidu，或者见博客：<a href="http://blog.csdn.net/tenfyguo/article/details/7477526">/proc/diskstats参数含义</a>。</li>
+<li>2、<strong>/proc/partitions</strong>——partitions是2.4版本的系统中的，其含义基本与diskstats一样。</li>
+<li>3、<strong>/proc/stat</strong>——stat记录了自系统启动之后，CPU的信息，具体含义可以参考博客：性能测试进阶指南——基础篇一（系统资源的讲解）</li>
+<li>4、<strong>/proc/cpuinfo</strong>——iostat主要是从该内核文件中获取cpu的核心数的。</li>
+</ul>
 
-<p>iostat源码解析</p>
 
-<p>第一步，从/proc/cpuinfo中获取系统的cpu核心数，通过计算该文件中processor出现的次数便可以得到cpu的核心数；</p>
+<h3>iostat源码解析</h3>
 
-<p>第二步，通过判断文件/proc/diskstats和/proc/partitions是否存在，从而判断linux的内核是2.4版本还是2.6版本：如果/proc/diskstats文件存在，则为2.6版本；否则判断/proc/partitions是否存在，若存在，则为2.4版本；</p>
+<p><strong>第一步，从/proc/cpuinfo中获取系统的cpu核心数，通过计算该文件中processor出现的次数便可以得到cpu的核心数；</strong></p>
 
-<p>第三部，分析iostat命令输入的参数，每个参数的功能可以在上一篇博客中找到：<a href="http://www.loveyqq.tk/blog/2014/05/09/xing-neng-ce-shi-jin-jie-zhi-nan-ji-chu-pian-zhi-ci-pan-io/">性能测试进阶指南——基础篇之磁盘IO</a></p>
+<p><strong>第二步，通过判断文件/proc/diskstats和/proc/partitions是否存在，从而判断linux的内核是2.4版本还是2.6版本：如果/proc/diskstats文件存在，则为2.6版本；否则判断/proc/partitions是否存在，若存在，则为2.4版本；</strong></p>
 
-<p>第四步，初始化，获取磁盘名称。以内核2.6为例，读取文件/proc/diskstats<br/>
-<code>104    0 cciss/c0d0 49787 19805 1597284 159946 20172754 28596938 390157514 1583532 0 1352168 1737502</code><br/>
-第一个参数104和第二个参数0分别代表了major和minor，major是8的倍数，minor是16的倍数，只要同时符合这两个的条件，其对应的第三个参数cciss/c0d0便是所需要获取的磁盘名称；</p>
+<p><strong>第三部，分析iostat命令输入的参数，每个参数的功能可以在上一篇博客中找到：</strong><a href="http://www.loveyqq.tk/blog/2014/05/09/xing-neng-ce-shi-jin-jie-zhi-nan-ji-chu-pian-zhi-ci-pan-io/">性能测试进阶指南——基础篇之磁盘IO</a></p>
 
-<p>第五步，进入主循环：</p>
+<p><strong>第四步，初始化，获取磁盘名称。以内核2.6为例，读取文件/proc/diskstats</strong></p>
 
-<p>(1) 获取/proc/diskstats中每个磁盘的数据，例如：<br/>
-<code>104    0 cciss/c0d0 49787 19805 1597284 159946 20172754 28596938 390157514 1583532 0 1352168 1737502</code><br/>
-每个参数对应的值为
-104——major<br/>
-0——minor<br/>
-49787——rd_ios<br/>
-19805——rd_merges<br/>
-1597284——rd_sectors<br/>
-159946——rd_ticks<br/>
-20172754——wr_ios<br/>
-28596938——wr_merges<br/>
-390157514——wr_sectors<br/>
-1583532——wr_ticks<br/>
-1352168——ticks<br/>
-1737502——aveq</p>
+<pre><code>104    0 cciss/c0d0 49787 19805 1597284 159946 20172754 28596938 390157514 1583532 0 1352168 1737502  
+</code></pre>
 
-<p>(2) 获取/proc/stat中的数据，计算cpu的平均时间：分别获取cpu的user时间，nice时间，system时间，idle时间，iowait时间。计算中将nice时间并入user时间，将irq时间和softirq时间并入system时间。此处只计算cpu的平均和状态，不计算每隔核单独的状态。</p>
+<p><strong>第一个参数104和第二个参数0分别代表了major和minor，major是8的倍数，minor是16的倍数，只要同时符合这两个的条件，其对应的第三个参数cciss/c0d0便是所需要获取的磁盘名称；</strong></p>
 
-<p>(3)计算deltams时间，其中HZ是Linux的系统频率。
-<code>deltams = 1000.0 * ((new_cpu.user + new_cpu.system + new_cpu.idle + new_cpu.iowait) - (old_cpu.user + old_cpu.system + old_cpu.idle + old_cpu.iowait)) / ncpu / HZ;</code></p>
+<p><strong>第五步，进入主循环：</strong></p>
 
-<p>(4)计算IO</p>
+<p><strong>(1) 获取/proc/diskstats中每个磁盘的数据</strong>，例如：</p>
+
+<pre><code>104    0 cciss/c0d0 49787 19805 1597284 159946 20172754 28596938 390157514 1583532 0 1352168 1737502
+</code></pre>
+
+<p>每个参数对应的值为</p>
+
+<pre><code>104——major  
+0——minor  
+49787——rd_ios  
+19805——rd_merges  
+1597284——rd_sectors  
+159946——rd_ticks  
+20172754——wr_ios  
+28596938——wr_merges  
+390157514——wr_sectors  
+1583532——wr_ticks  
+1352168——ticks  
+1737502——aveq  
+</code></pre>
+
+<p><strong>(2) 获取/proc/stat中的数据，计算cpu的平均时间：分别获取cpu的user时间，nice时间，system时间，idle时间，iowait时间。计算中将nice时间并入user时间，将irq时间和softirq时间并入system时间。此处只计算cpu的平均和状态，不计算每隔核单独的状态。</strong></p>
+
+<p><strong>(3)计算deltams时间，其中HZ是Linux的系统频率。</strong></p>
+
+<pre><code>deltams = 1000.0 * ((new_cpu.user + new_cpu.system + new_cpu.idle + new_cpu.iowait) - (old_cpu.user + old_cpu.system + old_cpu.idle + old_cpu.iowait)) / ncpu / HZ; `
+</code></pre>
+
+<p><strong>(4)计算IO</strong></p>
 
 <pre><code>blkio.rd_ios = new_blkio[p].rd_ios - old_blkio[p].rd_ios;
 blkio.rd_merges = new_blkio[p].rd_merges - old_blkio[p].rd_merges;
@@ -85,9 +98,9 @@ busy = 100.0 * blkio.ticks / deltams;
 if (busy &gt; 100.0) busy = 100.0;
 </code></pre>
 
-<p>rd_sectors和wr_sectors是扇区数，如果需要换算成KB等单位，需要除以2，1KB=2*512Bytes。512Bytes为1个扇区数。</p>
+<p><strong>rd_sectors和wr_sectors是扇区数，如果需要换算成KB等单位，需要除以2，1KB=2*512Bytes。512Bytes为1个扇区数。</strong></p>
 
-<p>(5)计算CPU</p>
+<p><strong>(5)计算CPU</strong></p>
 
 <pre><code>cpu.user = new_cpu.user - old_cpu.user;
 cpu.system = new_cpu.system - old_cpu.system;
@@ -99,7 +112,7 @@ if (kernel == 6) printf("%3.0f ", cpu.iowait / total);
 printf("%3.0f", cpu.idle / total);
 </code></pre>
 
-<p>(6) Save old stats：</p>
+<p><strong>(6) Save old stats：</strong></p>
 
 <pre><code>old_blkio[p] = new_blkio[p];
 old_cpu = new_cpu;
@@ -107,7 +120,7 @@ old_cpu = new_cpu;
 
 <p>每隔采样时间循环执行第五步。</p>
 
-<p>从源码中可以看出，第一次获取的时候，是没有old stats的，所有的old stats值均为0，即iostat在第一次输出的值为Linux启动之后至当前时间的一个平均状态值，在之后的输出值则为系统当前的实时磁盘I/O信息和CPU信息。</p>
+<p><strong>从源码中可以看出，第一次获取的时候，是没有old stats的，所有的old stats值均为0，即iostat在第一次输出的值为Linux启动之后至当前时间的一个平均状态值，在之后的输出值则为系统当前的实时磁盘I/O信息和CPU信息。</strong></p>
 ]]></content>
   </entry>
   
