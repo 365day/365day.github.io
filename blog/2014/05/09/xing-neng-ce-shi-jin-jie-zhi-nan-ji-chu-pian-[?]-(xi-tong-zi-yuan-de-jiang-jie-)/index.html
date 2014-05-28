@@ -358,75 +358,75 @@ procs_blocked 0
 
 <p>参数                                                                解释</p>
 
-<p>pid=20738                            进程号</p>
+<p>1——pid=20738                            进程号</p>
 
-<p>comm=(java)                 应用程序或命令的名字</p>
+<p>2——comm=(java)                  应用程序或命令的名字</p>
 
-<p>task_state=S                    任务的状态：R is running, S is sleeping, D is sleeping in an uninterruptible wait, Z is zombie, T is traced or stopped</p>
+<p>3——task_state=S                 任务的状态：R is running, S is sleeping, D is sleeping in an uninterruptible wait, Z is zombie, T is traced or stopped</p>
 
-<p>ppid=1                      父进程ID</p>
+<p>4——ppid=1                       父进程ID</p>
 
-<p>pgid=20730                  线程组号</p>
+<p>5——pgid=20730                   线程组号</p>
 
-<p>sid=20615                   该任务所在的会话组ID</p>
+<p>6——sid=20615                    该任务所在的会话组ID</p>
 
-<p>tty_nr=34827                    该任务的tty终端的设备号，INT（34817/256）=主设备号，（34817-主设备号）=次设备号</p>
+<p>7——tty_nr=34827                 该任务的tty终端的设备号，INT（34817/256）=主设备号，（34817-主设备号）=次设备号</p>
 
-<p>tty_pgrp=20615              终端的进程组号，当前运行在该任务所在终端的前台任务(包括shell 应用程序)的PID。</p>
+<p>8——tty_pgrp=20615               终端的进程组号，当前运行在该任务所在终端的前台任务(包括shell 应用程序)的PID。</p>
 
-<p>task->flags=4202496         进程标志位，查看该任务的特性</p>
+<p>9——task->flags=4202496          进程标志位，查看该任务的特性</p>
 
-<p>min_flt=13527950                该任务不需要从硬盘拷数据而发生的缺页（次缺页）的次数</p>
+<p>10——min_flt=13527950                该任务不需要从硬盘拷数据而发生的缺页（次缺页）的次数</p>
 
-<p>cmin_flt=0                  累计的该任务的所有的waited-for进程曾经发生的次缺页的次数目</p>
+<p>11——cmin_flt=0                  累计的该任务的所有的waited-for进程曾经发生的次缺页的次数目</p>
 
-<p>maj_flt=2442                    该任务需要从硬盘拷数据而发生的缺页（主缺页）的次数</p>
+<p>12——maj_flt=2442                    该任务需要从硬盘拷数据而发生的缺页（主缺页）的次数</p>
 
-<p>cmaj_flt=0                  累计的该任务的所有的waited-for进程曾经发生的主缺页的次数目</p>
+<p>13——cmaj_flt=0                  累计的该任务的所有的waited-for进程曾经发生的主缺页的次数目</p>
 
-<p><strong>utime=2593008             该任务在用户态运行的时间，单位为jiffies</strong></p>
+<p><strong>14——utime=2593008             该任务在用户态运行的时间，单位为jiffies</strong></p>
 
-<p><strong>stime=426148                  该任务在核心态运行的时间，单位为jiffies</strong></p>
+<p><strong>15——stime=426148                  该任务在核心态运行的时间，单位为jiffies</strong></p>
 
-<p><strong>cutime=0                      累计的该任务的所有的waited-for进程曾经在用户态运行的时间，单位为jiffies</strong></p>
+<p><strong>16——cutime=0                      累计的该任务的所有的waited-for进程曾经在用户态运行的时间，单位为jiffies</strong></p>
 
-<p><strong>cstime=0                      累计的该任务的所有的waited-for进程曾经在核心态运行的时间，单位为jiffies</strong></p>
+<p><strong>17——cstime=0                      累计的该任务的所有的waited-for进程曾经在核心态运行的时间，单位为jiffies</strong></p>
 
-<p>priority=22                 任务的动态优先级</p>
+<p>18——priority=22                 任务的动态优先级</p>
 
-<p>nice=0                      任务的静态优先级</p>
+<p>19——nice=0                      任务的静态优先级</p>
 
-<p>num_threads=1405                该任务所在的线程组里线程的个数</p>
+<p>20——num_threads=1405                该任务所在的线程组里线程的个数</p>
 
-<p>it_real_value=0 由于计时间隔导致的下一个 SIGALRM 发送进程的时延，以 jiffy 为单位.</p>
+<p>21——it_real_value=0 由于计时间隔导致的下一个 SIGALRM 发送进程的时延，以 jiffy 为单位.</p>
 
-<p>start_time=5882654 该任务启动的时间，单位为jiffies</p>
+<p>22——start_time=5882654 该任务启动的时间，单位为jiffies</p>
 
-<p>vsize=1409024（page） 该任务的虚拟地址空间大小</p>
+<p>23——vsize=1409024（page） 该任务的虚拟地址空间大小</p>
 
-<p>rss=56(page) 该任务当前驻留物理地址空间的大小。Number of pages the process has in real memory,minu 3 for administrative purpose.这些页可能用于代码，数据和栈。</p>
+<p>24——rss=56(page) 该任务当前驻留物理地址空间的大小。Number of pages the process has in real memory,minu 3 for administrative purpose.这些页可能用于代码，数据和栈。</p>
 
-<p>rlim=4294967295（bytes） 该任务能驻留物理地址空间的最大值</p>
+<p>25——rlim=4294967295（bytes） 该任务能驻留物理地址空间的最大值</p>
 
-<p>start_code=134512640 该任务在虚拟地址空间的代码段的起始地址</p>
+<p>26——start_code=134512640 该任务在虚拟地址空间的代码段的起始地址</p>
 
-<p>end_code=134513720 该任务在虚拟地址空间的代码段的结束地址</p>
+<p>27——end_code=134513720 该任务在虚拟地址空间的代码段的结束地址</p>
 
-<p>start_stack=3215579040 该任务在虚拟地址空间的栈的结束地址</p>
+<p>28——start_stack=3215579040 该任务在虚拟地址空间的栈的结束地址</p>
 
-<p>kstkesp=0 esp(32 位堆栈指针) 的当前值, 与在进程的内核堆栈页得到的一致.</p>
+<p>29——kstkesp=0 esp(32 位堆栈指针) 的当前值, 与在进程的内核堆栈页得到的一致.</p>
 
-<p>kstkeip=2097798 指向将要执行的指令的指针, EIP(32 位指令指针)的当前值.</p>
+<p>30——kstkeip=2097798 指向将要执行的指令的指针, EIP(32 位指令指针)的当前值.</p>
 
-<p>pendingsig=0 待处理信号的位图，记录发送给进程的普通信号</p>
+<p>31——pendingsig=0 待处理信号的位图，记录发送给进程的普通信号</p>
 
-<p>block_sig=0 阻塞信号的位图</p>
+<p>32——block_sig=0 阻塞信号的位图</p>
 
-<p>sigign=0 忽略的信号的位图</p>
+<p>33——sigign=0 忽略的信号的位图</p>
 
-<p>sigcatch=082985 被俘获的信号的位图</p>
+<p>34——sigcatch=082985 被俘获的信号的位图</p>
 
-<p>wchan=0 如果该进程是睡眠状态，该值给出调度的调用点</p>
+<p>35——wchan=0 如果该进程是睡眠状态，该值给出调度的调用点</p>
 
 <p>nswap 被swapped的页数，当前没用</p>
 
