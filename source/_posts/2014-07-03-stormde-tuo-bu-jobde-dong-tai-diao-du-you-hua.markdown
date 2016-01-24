@@ -6,7 +6,7 @@ comments: true
 categories: Octopress
 ---
 
-前一段时间跟一个小伙伴聊到storm的拓扑动态分配的算法，如何能够根据storm的集群状态去最优化分配每个拓扑Job。
+前一段时间跟一个小伙伴聊到storm的拓扑动态分配的算法，如何能够根据storm的集群状态去最优化分配每个拓扑Job 。
 
 下面先说一下具体的问题：
 
