@@ -1,0 +1,99 @@
+---
+layout: post
+title: "Linux内核源码详解——命令篇之iostat"
+date: 2014-05-17 18:09:20 +0800
+comments: true
+categories: octopress
+---
+本文主要分析了Linux的iostat命令的源码，iostat的主要功能见博客：[性能测试进阶指南——基础篇之磁盘IO](http://www.loveyqq.tk/blog/2014/05/09/xing-neng-ce-shi-jin-jie-zhi-nan-ji-chu-pian-zhi-ci-pan-io/)
+
+iostat源码共563行，应该算是Linux系统命令代码比较少的了。源代码中主要涉及到如下几个Linux的内核文件：
+
+* 1、**/proc/diskstats**——该文件是内核2.6以上的系统中的，记录了从Linux系统启动之后，所有磁盘的相关信息，该文件中每个参数代表的意义可以自行google或者baidu，或者见博客：[/proc/diskstats参数含义](http://blog.csdn.net/tenfyguo/article/details/7477526)。  
+* 2、**/proc/partitions**——partitions是2.4版本的系统中的，其含义基本与diskstats一样。  
+* 3、**/proc/stat**——stat记录了自系统启动之后，CPU的信息，具体含义可以参考博客：性能测试进阶指南——基础篇一（系统资源的讲解）  
+* 4、**/proc/cpuinfo**——iostat主要是从该内核文件中获取cpu的核心数的。
+
+### iostat源码解析
+
+**第一步，从/proc/cpuinfo中获取系统的cpu核心数，通过计算该文件中processor出现的次数便可以得到cpu的核心数；**
+
+**第二步，通过判断文件/proc/diskstats和/proc/partitions是否存在，从而判断linux的内核是2.4版本还是2.6版本：如果/proc/diskstats文件存在，则为2.6版本；否则判断/proc/partitions是否存在，若存在，则为2.4版本；**
+
+**第三部，分析iostat命令输入的参数，每个参数的功能可以在上一篇博客中找到：**[性能测试进阶指南——基础篇之磁盘IO](http://www.loveyqq.tk/blog/2014/05/09/xing-neng-ce-shi-jin-jie-zhi-nan-ji-chu-pian-zhi-ci-pan-io/)
+
+**第四步，初始化，获取磁盘名称。以内核2.6为例，读取文件/proc/diskstats**
+
+    104    0 cciss/c0d0 49787 19805 1597284 159946 20172754 28596938 390157514 1583532 0 1352168 1737502  
+**第一个参数104和第二个参数0分别代表了major和minor，major是8的倍数，minor是16的倍数，只要同时符合这两个的条件，其对应的第三个参数cciss/c0d0便是所需要获取的磁盘名称；**
+
+**第五步，进入主循环：**
+
+**(1) 获取/proc/diskstats中每个磁盘的数据**，例如：
+
+    104    0 cciss/c0d0 49787 19805 1597284 159946 20172754 28596938 390157514 1583532 0 1352168 1737502
+每个参数对应的值为
+
+    104——major  
+    0——minor  
+    49787——rd_ios  
+    19805——rd_merges  
+    1597284——rd_sectors  
+    159946——rd_ticks  
+    20172754——wr_ios  
+    28596938——wr_merges  
+    390157514——wr_sectors  
+    1583532——wr_ticks  
+    1352168——ticks  
+    1737502——aveq  
+
+**(2) 获取/proc/stat中的数据，计算cpu的平均时间：分别获取cpu的user时间，nice时间，system时间，idle时间，iowait时间。计算中将nice时间并入user时间，将irq时间和softirq时间并入system时间。此处只计算cpu的平均和状态，不计算每隔核单独的状态。**
+
+**(3)计算deltams时间，其中HZ是Linux的系统频率。**
+
+    deltams = 1000.0 * ((new_cpu.user + new_cpu.system + new_cpu.idle + new_cpu.iowait) - (old_cpu.user + old_cpu.system + old_cpu.idle + old_cpu.iowait)) / ncpu / HZ; `
+
+
+**(4)计算IO**
+
+    blkio.rd_ios = new_blkio[p].rd_ios - old_blkio[p].rd_ios;
+    blkio.rd_merges = new_blkio[p].rd_merges - old_blkio[p].rd_merges;
+    blkio.rd_sectors = new_blkio[p].rd_sectors - old_blkio[p].rd_sectors;
+    blkio.rd_ticks = new_blkio[p].rd_ticks - old_blkio[p].rd_ticks;
+    blkio.wr_ios = new_blkio[p].wr_ios - old_blkio[p].wr_ios;
+    blkio.wr_merges = new_blkio[p].wr_merges - old_blkio[p].wr_merges; 
+    blkio.wr_sectors = new_blkio[p].wr_sectors - old_blkio[p].wr_sectors;
+    blkio.wr_ticks = new_blkio[p].wr_ticks - old_blkio[p].wr_ticks;
+    blkio.ticks = new_blkio[p].ticks - old_blkio[p].ticks;
+    blkio.aveq = new_blkio[p].aveq - old_blkio[p].aveq;
+    n_ios  = blkio.rd_ios + blkio.wr_ios;
+    n_ticks = blkio.rd_ticks + blkio.wr_ticks;
+    n_kbytes = (blkio.rd_sectors + blkio.wr_sectors) / 2.0;
+    queue = blkio.aveq / deltams;
+    size = n_ios ? n_kbytes / n_ios : 0.0;
+    wait = n_ios ? n_ticks / n_ios : 0.0;
+    svc_t = n_ios ? blkio.ticks / n_ios : 0.0;
+    busy = 100.0 * blkio.ticks / deltams; 
+    if (busy > 100.0) busy = 100.0;
+
+**rd_sectors和wr_sectors是扇区数，如果需要换算成KB等单位，需要除以2，1KB=2*512Bytes。512Bytes为1个扇区数。**
+
+**(5)计算CPU**
+
+    cpu.user = new_cpu.user - old_cpu.user;
+    cpu.system = new_cpu.system - old_cpu.system;
+    cpu.idle = new_cpu.idle - old_cpu.idle;
+    cpu.iowait = new_cpu.iowait - old_cpu.iowait;
+    total = (cpu.user + cpu.system + cpu.idle + cpu.iowait) / 100.0;
+    printf("%3.0f %3.0f ", cpu.user / total, cpu.system / total);
+    if (kernel == 6) printf("%3.0f ", cpu.iowait / total);
+    printf("%3.0f", cpu.idle / total);
+    
+**(6) Save old stats：**
+
+    old_blkio[p] = new_blkio[p];
+    old_cpu = new_cpu;
+    
+每隔采样时间循环执行第五步。
+
+**从源码中可以看出，第一次获取的时候，是没有old stats的，所有的old stats值均为0，即iostat在第一次输出的值为Linux启动之后至当前时间的一个平均状态值，在之后的输出值则为系统当前的实时磁盘I/O信息和CPU信息。**
