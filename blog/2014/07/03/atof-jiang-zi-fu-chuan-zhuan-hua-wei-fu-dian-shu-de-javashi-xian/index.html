@@ -9,7 +9,7 @@
   <meta name="author" content="GaoChuanjun">
 
   
-  <meta name="description" content="atof，是C语言中的一个字符串转化为浮点数的函数，在Java在也有一个对应的实现，就是大家所熟悉的Double.parseDouble(String s)函数。 既然是讲atof的Java实现，肯定脱离不开C语言的实现，引用我的算法学习之路中的一句话 stof是一个简单到爆的“算法” &hellip;">
+  <meta name="description" content="atof，是C语言中的一个字符串转化为浮点数的函数，在Java在也有一个对应的实现，就是大家所熟悉的Double.parseDouble(String s)函数。 既然是讲atof的Java实现，肯定脱离不开C语言的实现 &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -94,11 +94,7 @@
 
 <div class="entry-content"><p>atof，是C语言中的一个字符串转化为浮点数的函数，在Java在也有一个对应的实现，就是大家所熟悉的Double.parseDouble(String s)函数。</p>
 
-<p>既然是讲atof的Java实现，肯定脱离不开C语言的实现，引用<a href="http://zh.lucida.me/blog/on-learning-algorithms/">我的算法学习之路</a>中的一句话</p>
-
-<blockquote><p>stof是一个简单到爆的“算法”</p></blockquote>
-
-<p>事实却是如此，字符串转化为浮点数整个的算法核心只有一个，如何将字符&#8217;0&#8217;~&lsquo;9&#8217;转化为计算机能识别的数字0~9，而在C语言中有一个很简单的转化方式：int x = (char)c &ndash; &#8216;0&rsquo;; 剩下的就是一些异常处理以及如果有效的得到该字符串的位数。</p>
+<p>既然是讲atof的Java实现，肯定脱离不开C语言的实现，字符串转化为浮点数整个的算法核心只有一个，如何将字符&#8217;0&#8217;~&lsquo;9&#8217;转化为计算机能识别的数字0~9，而在C语言中有一个很简单的转化方式：int x = (char)c &ndash; &#8216;0&rsquo;; 剩下的就是一些异常处理以及如果有效的得到该字符串的位数。</p>
 
 <p>本文核心是想理解Java的实现，借此可以了解Java将字符串转为为浮点数的原理，通过这些代码可以看到，代码编写人注意了每一行代码的变量声明，以及if的逻辑控制提高效率：</p>
 
