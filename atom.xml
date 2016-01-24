@@ -4,7 +4,7 @@
   <title><![CDATA[Alfred's Blog]]></title>
   <link href="http://365day.github.io/atom.xml" rel="self"/>
   <link href="http://365day.github.io/"/>
-  <updated>2014-07-03T10:35:11+08:00</updated>
+  <updated>2014-08-12T13:51:09+08:00</updated>
   <id>http://365day.github.io/</id>
   <author>
     <name><![CDATA[GaoChuanjun]]></name>
@@ -12,6 +12,37 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[storm的拓扑Job的动态调度优化]]></title>
+    <link href="http://365day.github.io/blog/2014/07/03/stormde-tuo-bu-jobde-dong-tai-diao-du-you-hua/"/>
+    <updated>2014-07-03T10:58:59+08:00</updated>
+    <id>http://365day.github.io/blog/2014/07/03/stormde-tuo-bu-jobde-dong-tai-diao-du-you-hua</id>
+    <content type="html"><![CDATA[<p>前一段时间跟vip的一个伙伴聊到了storm的拓扑动态分配的算法，由于当时时间紧迫，也并未能得到一个特别优化的方案，这几天突然又想起了这个事，如何能够根据storm的集群状态去最优化分配每个拓扑Job。</p>
+
+<p>下面先说一下具体的问题：</p>
+
+<p>在实际使用场景中，每个拓扑Job所需要的资源都是动态变化的，有的Job在某个点需要的slot多，而在其它时间点需要的slot少。如何设计一个有效的动态算法去均衡每个拓扑Job呢？</p>
+
+<p>首先想到的是Hadoop中的雅虎调度器或许能够解决这个问题，后来想想，Hadoop与Storm有着本质的区别，Hadoop的每个MapReduce作业总有跑完的一天，而拓扑Job却是7 × 24运行的拓扑流，并不能简单的用队列和优先级来决定每个拓扑Job所需要的slots。</p>
+
+<p>下面谈谈自己想到的方案：</p>
+
+<p>这个方案借鉴于HashMap的实现原理：我们都知道HashMap在初始化时都有一个固定的大小，然后随着容量的增大，HashMap通过一个增长因子来逐渐增加容量大小。</p>
+
+<p>Storm的Job调度原理也一样，在初始化时给定一个固定的slot槽，然后通过ack时间判断是否Job需要增加slot，同时给增加slot设置一个增长因子,给该Job增加所需要的slot槽。此时，会出现下面几个问题：</p>
+
+<p>1、如果根据增长因子计算需要的slot槽，发现剩下的slot不够了，怎么办？</p>
+
+<p>2、什么时候适合把过剩slot槽释放掉？</p>
+
+<p>先解决这两个问题：</p>
+
+<p>第一个问题比较简单，如果剩下的slot槽不够了，只能把剩下的slot槽都分配给该Job。</p>
+
+<p>第二个问题涉及到的问题比较多，如果根据ack时间去决定，当ack时间足够短的时候，根据增长因子释放掉增加的slot，而如果出现当释放完slot之后，ack又不能满足需求，此时就会进入一个死循环，不断的在分配slot。这种问题一般是增长因子出现了问题。</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[atof(将字符串转化为浮点数的Java实现)]]></title>

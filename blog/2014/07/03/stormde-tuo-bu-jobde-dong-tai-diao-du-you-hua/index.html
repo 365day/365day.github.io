@@ -5,13 +5,11 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>Blog Archive - Alfred's Blog</title>
+  <title>storm的拓扑Job的动态调度优化 - Alfred's Blog</title>
   <meta name="author" content="GaoChuanjun">
 
   
-  <meta name="description" content="Blog Archive 2014 storm的拓扑Job的动态调度优化
-Jul 03 2014 posted in Octopress atof(将字符串转化为浮点数的Java实现)
-Jul 03 2014 posted in Octopress nginx优化篇之Linux 内核参数的优化 &hellip;">
+  <meta name="description" content="前一段时间跟vip的一个伙伴聊到了storm的拓扑动态分配的算法，由于当时时间紧迫，也并未能得到一个特别优化的方案，这几天突然又想起了这个事，如何能够根据storm的集群状态去最优化分配每个拓扑Job。 下面先说一下具体的问题： 在实际使用场景中，每个拓扑Job所需要的资源都是动态变化的， &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -20,7 +18,7 @@ Jul 03 2014 posted in Octopress nginx优化篇之Linux 内核参数的优化 &he
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   
-  <link rel="canonical" href="http://365day.github.io/blog/archives">
+  <link rel="canonical" href="http://365day.github.io/blog/2014/07/03/stormde-tuo-bu-jobde-dong-tai-diao-du-you-hua">
   <link href="/favicon.png" rel="icon">
   <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
   <link href="/atom.xml" rel="alternate" title="Alfred's Blog" type="application/atom+xml">
@@ -66,156 +64,126 @@ Jul 03 2014 posted in Octopress nginx优化篇之Linux 内核参数的优化 &he
   <div id="main">
     <div id="content">
       <div>
-<article role="article">
+<article class="hentry" role="article">
   
   <header>
-    <h1 class="entry-title">Blog Archive</h1>
+    
+      <h1 class="entry-title">storm的拓扑Job的动态调度优化</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-07-03T10:58:59+08:00" pubdate data-updated="true">Jul 3<span>rd</span>, 2014</time>
+        
+       <!--   -->
+      </p>
     
   </header>
-  
-  <div id="blog-archives">
 
 
+<div class="entry-content"><p>前一段时间跟vip的一个伙伴聊到了storm的拓扑动态分配的算法，由于当时时间紧迫，也并未能得到一个特别优化的方案，这几天突然又想起了这个事，如何能够根据storm的集群状态去最优化分配每个拓扑Job。</p>
 
-  
-  <h2>2014</h2>
+<p>下面先说一下具体的问题：</p>
 
-<article>
-  
-<h1><a href="/blog/2014/07/03/stormde-tuo-bu-jobde-dong-tai-diao-du-you-hua/">storm的拓扑Job的动态调度优化</a></h1>
-<time datetime="2014-07-03T10:58:59+08:00" pubdate><span class='month'>Jul</span> <span class='day'>03</span> <span class='year'>2014</span></time>
+<p>在实际使用场景中，每个拓扑Job所需要的资源都是动态变化的，有的Job在某个点需要的slot多，而在其它时间点需要的slot少。如何设计一个有效的动态算法去均衡每个拓扑Job呢？</p>
 
-<footer>
-  <span class="categories">posted in <a class='category' href='/blog/categories/octopress/'>Octopress</a></span>
-</footer>
+<p>首先想到的是Hadoop中的雅虎调度器或许能够解决这个问题，后来想想，Hadoop与Storm有着本质的区别，Hadoop的每个MapReduce作业总有跑完的一天，而拓扑Job却是7 × 24运行的拓扑流，并不能简单的用队列和优先级来决定每个拓扑Job所需要的slots。</p>
 
+<p>下面谈谈自己想到的方案：</p>
 
-</article>
+<p>这个方案借鉴于HashMap的实现原理：我们都知道HashMap在初始化时都有一个固定的大小，然后随着容量的增大，HashMap通过一个增长因子来逐渐增加容量大小。</p>
 
+<p>Storm的Job调度原理也一样，在初始化时给定一个固定的slot槽，然后通过ack时间判断是否Job需要增加slot，同时给增加slot设置一个增长因子,给该Job增加所需要的slot槽。此时，会出现下面几个问题：</p>
 
+<p>1、如果根据增长因子计算需要的slot槽，发现剩下的slot不够了，怎么办？</p>
 
-<article>
-  
-<h1><a href="/blog/2014/07/03/atof-jiang-zi-fu-chuan-zhuan-hua-wei-fu-dian-shu-de-javashi-xian/">atof(将字符串转化为浮点数的Java实现)</a></h1>
-<time datetime="2014-07-03T09:38:20+08:00" pubdate><span class='month'>Jul</span> <span class='day'>03</span> <span class='year'>2014</span></time>
+<p>2、什么时候适合把过剩slot槽释放掉？</p>
 
-<footer>
-  <span class="categories">posted in <a class='category' href='/blog/categories/octopress/'>Octopress</a></span>
-</footer>
+<p>先解决这两个问题：</p>
 
+<p>第一个问题比较简单，如果剩下的slot槽不够了，只能把剩下的slot槽都分配给该Job。</p>
 
-</article>
-
-
-
-<article>
-  
-<h1><a href="/blog/2014/05/27/nginxyou-hua-pian-zhi-linux-nei-he-can-shu-de-you-hua/">nginx优化篇之Linux 内核参数的优化</a></h1>
-<time datetime="2014-05-27T09:43:24+08:00" pubdate><span class='month'>May</span> <span class='day'>27</span> <span class='year'>2014</span></time>
-
-<footer>
-  <span class="categories">posted in <a class='category' href='/blog/categories/octopress/'>Octopress</a></span>
-</footer>
-
-
-</article>
-
-
-
-<article>
-  
-<h1><a href="/blog/2014/05/25/capacityschedulerdiao-du-suan-fa/">CapacityScheduler调度算法</a></h1>
-<time datetime="2014-05-25T17:42:54+08:00" pubdate><span class='month'>May</span> <span class='day'>25</span> <span class='year'>2014</span></time>
-
-<footer>
-  <span class="categories">posted in <a class='category' href='/blog/categories/octopress/'>Octopress</a></span>
-</footer>
-
-
-</article>
-
-
-
-<article>
-  
-<h1><a href="/blog/2014/05/17/linuxnei-he-yuan-ma-xiang-jie-ming-ling-pian-zhi-iostat/">Linux内核源码详解——命令篇之iostat</a></h1>
-<time datetime="2014-05-17T18:09:20+08:00" pubdate><span class='month'>May</span> <span class='day'>17</span> <span class='year'>2014</span></time>
-
-<footer>
-  <span class="categories">posted in <a class='category' href='/blog/categories/octopress/'>octopress</a></span>
-</footer>
-
-
-</article>
-
-
-
-<article>
-  
-<h1><a href="/blog/2014/05/09/xing-neng-ce-shi-jin-jie-zhi-nan-ji-chu-pian-zhi-ci-pan-io/">性能测试进阶指南——基础篇之磁盘IO</a></h1>
-<time datetime="2014-05-09T15:00:22+08:00" pubdate><span class='month'>May</span> <span class='day'>09</span> <span class='year'>2014</span></time>
-
-
-</article>
-
-
-
-<article>
-  
-<h1><a href="/blog/2014/05/09/xing-neng-ce-shi-jin-jie-zhi-nan-ji-chu-pian-%5B%3F%5D-%28xi-tong-zi-yuan-de-jiang-jie-%29/">性能测试进阶指南——基础篇一（系统资源的讲解）</a></h1>
-<time datetime="2014-05-09T09:04:01+08:00" pubdate><span class='month'>May</span> <span class='day'>09</span> <span class='year'>2014</span></time>
-
-<footer>
-  <span class="categories">posted in <a class='category' href='/blog/categories/octopress/'>Octopress</a></span>
-</footer>
-
-
-</article>
-
-
-
-<article>
-  
-<h1><a href="/blog/2014/05/08/mac-os-xxia-bian-yi-jzmq/">Mac OS X下编译jzmq</a></h1>
-<time datetime="2014-05-08T18:48:58+08:00" pubdate><span class='month'>May</span> <span class='day'>08</span> <span class='year'>2014</span></time>
-
-
-</article>
-
-
-
-<article>
-  
-<h1><a href="/blog/2014/05/08/yong-octopressxie-bo-ke-%28chang-yong-ming-ling-%29/">用Octopress写博客（常用命令）</a></h1>
-<time datetime="2014-05-08T14:38:29+08:00" pubdate><span class='month'>May</span> <span class='day'>08</span> <span class='year'>2014</span></time>
-
-<footer>
-  <span class="categories">posted in <a class='category' href='/blog/categories/octopress/'>Octopress</a></span>
-</footer>
-
-
-</article>
-
-
-
-<article>
-  
-<h1><a href="/blog/2014/05/07/self-introduction/">Self-Introduction</a></h1>
-<time datetime="2014-05-07T22:56:27+08:00" pubdate><span class='month'>May</span> <span class='day'>07</span> <span class='year'>2014</span></time>
-
-<footer>
-  <span class="categories">posted in <a class='category' href='/blog/categories/octopress/'>Octopress</a></span>
-</footer>
-
-
-</article>
-
+<p>第二个问题涉及到的问题比较多，如果根据ack时间去决定，当ack时间足够短的时候，根据增长因子释放掉增加的slot，而如果出现当释放完slot之后，ack又不能满足需求，此时就会进入一个死循环，不断的在分配slot。这种问题一般是增长因子出现了问题。</p>
 </div>
 
+
+  <footer>
+    <p class="meta">
+      
   
+
+<span class="byline author vcard">Posted by <span class="fn">GaoChuanjun</span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-07-03T10:58:59+08:00" pubdate data-updated="true">Jul 3<span>rd</span>, 2014</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/octopress/'>Octopress</a>
+  
+</span>
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2014/07/03/atof-jiang-zi-fu-chuan-zhuan-hua-wei-fu-dian-shu-de-javashi-xian/" title="Previous Post: atof(将字符串转化为浮点数的Java实现)">&laquo; atof(将字符串转化为浮点数的Java实现)</a>
+      
+      
+    </p>
+  </footer>
 </article>
 
 <!--  -->
+<!--  -->
+
+<!-- 多说评论框 start -->
+  <div class="ds-thread"></div>
+<!-- 多说评论框 end -->
+<!-- 多说公共JS代码 start (一个网页只需插入一次) -->
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"gaochuanjun"};
+  (function() {
+    var ds = document.createElement('script');
+    ds.type = 'text/javascript';ds.async = true;
+    ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+    ds.charset = 'UTF-8';
+    (document.getElementsByTagName('head')[0] 
+     || document.getElementsByTagName('body')[0]).appendChild(ds);
+  })();
+  </script>
+<!-- 多说公共JS代码 end -->
 </div>
 
 <aside class="sidebar">
