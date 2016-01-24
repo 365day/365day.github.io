@@ -4,7 +4,7 @@
   <title><![CDATA[Alfred's Blog]]></title>
   <link href="http://365day.github.io/atom.xml" rel="self"/>
   <link href="http://365day.github.io/"/>
-  <updated>2014-08-12T13:51:09+08:00</updated>
+  <updated>2016-01-25T00:25:38+08:00</updated>
   <id>http://365day.github.io/</id>
   <author>
     <name><![CDATA[GaoChuanjun]]></name>
@@ -18,7 +18,7 @@
     <link href="http://365day.github.io/blog/2014/07/03/stormde-tuo-bu-jobde-dong-tai-diao-du-you-hua/"/>
     <updated>2014-07-03T10:58:59+08:00</updated>
     <id>http://365day.github.io/blog/2014/07/03/stormde-tuo-bu-jobde-dong-tai-diao-du-you-hua</id>
-    <content type="html"><![CDATA[<p>前一段时间跟vip的一个伙伴聊到了storm的拓扑动态分配的算法，由于当时时间紧迫，也并未能得到一个特别优化的方案，这几天突然又想起了这个事，如何能够根据storm的集群状态去最优化分配每个拓扑Job。</p>
+    <content type="html"><![CDATA[<p>前一段时间跟一个小伙伴聊到storm的拓扑动态分配的算法——如何能够根据storm的集群状态去最优化分配每个拓扑Job 。</p>
 
 <p>下面先说一下具体的问题：</p>
 
@@ -51,11 +51,7 @@
     <id>http://365day.github.io/blog/2014/07/03/atof-jiang-zi-fu-chuan-zhuan-hua-wei-fu-dian-shu-de-javashi-xian</id>
     <content type="html"><![CDATA[<p>atof，是C语言中的一个字符串转化为浮点数的函数，在Java在也有一个对应的实现，就是大家所熟悉的Double.parseDouble(String s)函数。</p>
 
-<p>既然是讲atof的Java实现，肯定脱离不开C语言的实现，引用<a href="http://zh.lucida.me/blog/on-learning-algorithms/">我的算法学习之路</a>中的一句话</p>
-
-<blockquote><p>stof是一个简单到爆的“算法”</p></blockquote>
-
-<p>事实却是如此，字符串转化为浮点数整个的算法核心只有一个，如何将字符&#8217;0&#8217;~&lsquo;9&#8217;转化为计算机能识别的数字0~9，而在C语言中有一个很简单的转化方式：int x = (char)c &ndash; &#8216;0&rsquo;; 剩下的就是一些异常处理以及如果有效的得到该字符串的位数。</p>
+<p>既然是讲atof的Java实现，肯定脱离不开C语言的实现，字符串转化为浮点数整个的算法核心只有一个，如何将字符&#8217;0&#8217;~&lsquo;9&#8217;转化为计算机能识别的数字0~9，而在C语言中有一个很简单的转化方式：int x = (char)c &ndash; &#8216;0&rsquo;; 剩下的就是一些异常处理以及如果有效的得到该字符串的位数。</p>
 
 <p>本文核心是想理解Java的实现，借此可以了解Java将字符串转为为浮点数的原理，通过这些代码可以看到，代码编写人注意了每一行代码的变量声明，以及if的逻辑控制提高效率：</p>
 
@@ -456,8 +452,6 @@ if (c == 'N' || c == 'I');
 <p>int iValue = (int)digits[0]&ndash;(int)&lsquo;0&rsquo;;</p>
 
 <p><strong>直接通过了强制类型转换进行数值的转换</strong>，剩下的任务就是异常判断以及是否为科学计数法。</p>
-
-<p><strong>总结：从上面可以看出，从算法本身来讲，Java简直弱爆了，一个用C语言十几行代码就能实现的算法，用Java却达到了一百来行的代码。</strong></p>
 ]]></content>
   </entry>
   
@@ -2022,20 +2016,18 @@ autogen.sh: error: autoreconf exited with status 0</p></blockquote>
 
 <ul>
 <li><h5>###### 丁丁网 （2012.06~2012.11）</h5></li>
-<li><h5>###### 大智慧 （2013.03~至今）</h5></li>
+<li><h5>###### 大智慧 （2013.03~2014.08）</h5></li>
+<li><h5>###### 唯品会 （2014.08~2014.11）</h5></li>
+<li><h5>###### 丰趣海淘 （2014.11~2014.至今）</h5></li>
 </ul>
 
 
 <h3>#### 常用博客地址：</h3>
 
 <ul>
-<li><h5>###### CSDN：<a href="http://blog.csdn.net/gao715108023">http://blog.csdn.net/gao715108023</a></h5></li>
-<li><h5>###### GitHub：<a href="https://github.com/gao715108023">https://github.com/gao715108023</a></h5></li>
+<li><h5>###### CSDN：<a href="http://">http://blog.csdn.net/gao715108023</a></h5></li>
+<li><h5>###### GitHub：<a href="http://">https://github.com/gao715108023</a></h5></li>
 <li><h5>###### 知乎ID：alfred nuist</h5></li>
-<li><h5>###### 果壳网：三俗人</h5></li>
-<li><h5>###### 摄影新手Instagram账户：gao715108023</h5>
-
-<p><strong><em> Email：alfred0918@163.com</em></strong></p></li>
 </ul>
 
 ]]></content>
