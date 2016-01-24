@@ -1,0 +1,2044 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Alfred's Blog]]></title>
+  <link href="http://365day.github.io/atom.xml" rel="self"/>
+  <link href="http://365day.github.io/"/>
+  <updated>2014-08-12T13:51:09+08:00</updated>
+  <id>http://365day.github.io/</id>
+  <author>
+    <name><![CDATA[GaoChuanjun]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[storm的拓扑Job的动态调度优化]]></title>
+    <link href="http://365day.github.io/blog/2014/07/03/stormde-tuo-bu-jobde-dong-tai-diao-du-you-hua/"/>
+    <updated>2014-07-03T10:58:59+08:00</updated>
+    <id>http://365day.github.io/blog/2014/07/03/stormde-tuo-bu-jobde-dong-tai-diao-du-you-hua</id>
+    <content type="html"><![CDATA[<p>前一段时间跟vip的一个伙伴聊到了storm的拓扑动态分配的算法，由于当时时间紧迫，也并未能得到一个特别优化的方案，这几天突然又想起了这个事，如何能够根据storm的集群状态去最优化分配每个拓扑Job。</p>
+
+<p>下面先说一下具体的问题：</p>
+
+<p>在实际使用场景中，每个拓扑Job所需要的资源都是动态变化的，有的Job在某个点需要的slot多，而在其它时间点需要的slot少。如何设计一个有效的动态算法去均衡每个拓扑Job呢？</p>
+
+<p>首先想到的是Hadoop中的雅虎调度器或许能够解决这个问题，后来想想，Hadoop与Storm有着本质的区别，Hadoop的每个MapReduce作业总有跑完的一天，而拓扑Job却是7 × 24运行的拓扑流，并不能简单的用队列和优先级来决定每个拓扑Job所需要的slots。</p>
+
+<p>下面谈谈自己想到的方案：</p>
+
+<p>这个方案借鉴于HashMap的实现原理：我们都知道HashMap在初始化时都有一个固定的大小，然后随着容量的增大，HashMap通过一个增长因子来逐渐增加容量大小。</p>
+
+<p>Storm的Job调度原理也一样，在初始化时给定一个固定的slot槽，然后通过ack时间判断是否Job需要增加slot，同时给增加slot设置一个增长因子,给该Job增加所需要的slot槽。此时，会出现下面几个问题：</p>
+
+<p>1、如果根据增长因子计算需要的slot槽，发现剩下的slot不够了，怎么办？</p>
+
+<p>2、什么时候适合把过剩slot槽释放掉？</p>
+
+<p>先解决这两个问题：</p>
+
+<p>第一个问题比较简单，如果剩下的slot槽不够了，只能把剩下的slot槽都分配给该Job。</p>
+
+<p>第二个问题涉及到的问题比较多，如果根据ack时间去决定，当ack时间足够短的时候，根据增长因子释放掉增加的slot，而如果出现当释放完slot之后，ack又不能满足需求，此时就会进入一个死循环，不断的在分配slot。这种问题一般是增长因子出现了问题。</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[atof(将字符串转化为浮点数的Java实现)]]></title>
+    <link href="http://365day.github.io/blog/2014/07/03/atof-jiang-zi-fu-chuan-zhuan-hua-wei-fu-dian-shu-de-javashi-xian/"/>
+    <updated>2014-07-03T09:38:20+08:00</updated>
+    <id>http://365day.github.io/blog/2014/07/03/atof-jiang-zi-fu-chuan-zhuan-hua-wei-fu-dian-shu-de-javashi-xian</id>
+    <content type="html"><![CDATA[<p>atof，是C语言中的一个字符串转化为浮点数的函数，在Java在也有一个对应的实现，就是大家所熟悉的Double.parseDouble(String s)函数。</p>
+
+<p>既然是讲atof的Java实现，肯定脱离不开C语言的实现，引用<a href="http://zh.lucida.me/blog/on-learning-algorithms/">我的算法学习之路</a>中的一句话</p>
+
+<blockquote><p>stof是一个简单到爆的“算法”</p></blockquote>
+
+<p>事实却是如此，字符串转化为浮点数整个的算法核心只有一个，如何将字符&#8217;0&#8217;~&lsquo;9&#8217;转化为计算机能识别的数字0~9，而在C语言中有一个很简单的转化方式：int x = (char)c &ndash; &#8216;0&rsquo;; 剩下的就是一些异常处理以及如果有效的得到该字符串的位数。</p>
+
+<p>本文核心是想理解Java的实现，借此可以了解Java将字符串转为为浮点数的原理，通过这些代码可以看到，代码编写人注意了每一行代码的变量声明，以及if的逻辑控制提高效率：</p>
+
+<pre><code>public strictfp double doubleValue(){
+    int     kDigits = Math.min( nDigits, maxDecimalDigits+1 );
+    long    lValue;
+    double  dValue;
+    double  rValue, tValue;
+
+    // First, check for NaN and Infinity values
+    if(digits == infinity || digits == notANumber) {
+        if(digits == notANumber)
+            return Double.NaN;
+        else
+            return (isNegative?Double.NEGATIVE_INFINITY:Double.POSITIVE_INFINITY);
+    }
+    else {
+        if (mustSetRoundDir) {
+            roundDir = 0;
+        }
+        /*
+         * convert the lead kDigits to a long integer.
+         */
+        // (special performance hack: start to do it using int)
+        int iValue = (int)digits[0]-(int)'0';
+        int iDigits = Math.min( kDigits, intDecimalDigits );
+        for ( int i=1; i &lt; iDigits; i++ ){
+            iValue = iValue*10 + (int)digits[i]-(int)'0';
+        }
+        lValue = (long)iValue;
+        for ( int i=iDigits; i &lt; kDigits; i++ ){
+            lValue = lValue*10L + (long)((int)digits[i]-(int)'0');
+        }
+        dValue = (double)lValue;
+        int exp = decExponent-kDigits;
+        /*
+         * lValue now contains a long integer with the value of
+         * the first kDigits digits of the number.
+         * dValue contains the (double) of the same.
+         */
+
+        if ( nDigits &lt;= maxDecimalDigits ){
+            /*
+             * possibly an easy case.
+             * We know that the digits can be represented
+             * exactly. And if the exponent isn't too outrageous,
+             * the whole thing can be done with one operation,
+             * thus one rounding error.
+             * Note that all our constructors trim all leading and
+             * trailing zeros, so simple values (including zero)
+             * will always end up here
+             */
+            if (exp == 0 || dValue == 0.0)
+                return (isNegative)? -dValue : dValue; // small floating integer
+            else if ( exp &gt;= 0 ){
+                if ( exp &lt;= maxSmallTen ){
+                    /*
+                     * Can get the answer with one operation,
+                     * thus one roundoff.
+                     */
+                    rValue = dValue * small10pow[exp];
+                    if ( mustSetRoundDir ){
+                        tValue = rValue / small10pow[exp];
+                        roundDir = ( tValue ==  dValue ) ? 0
+                            :( tValue &lt; dValue ) ? 1
+                            : -1;
+                    }
+                    return (isNegative)? -rValue : rValue;
+                }
+                int slop = maxDecimalDigits - kDigits;
+                if ( exp &lt;= maxSmallTen+slop ){
+                    /*
+                     * We can multiply dValue by 10^(slop)
+                     * and it is still "small" and exact.
+                     * Then we can multiply by 10^(exp-slop)
+                     * with one rounding.
+                     */
+                    dValue *= small10pow[slop];
+                    rValue = dValue * small10pow[exp-slop];
+
+                    if ( mustSetRoundDir ){
+                        tValue = rValue / small10pow[exp-slop];
+                        roundDir = ( tValue ==  dValue ) ? 0
+                            :( tValue &lt; dValue ) ? 1
+                            : -1;
+                    }
+                    return (isNegative)? -rValue : rValue;
+                }
+                /*
+                 * Else we have a hard case with a positive exp.
+                 */
+            } else {
+                if ( exp &gt;= -maxSmallTen ){
+                    /*
+                     * Can get the answer in one division.
+                     */
+                    rValue = dValue / small10pow[-exp];
+                    tValue = rValue * small10pow[-exp];
+                    if ( mustSetRoundDir ){
+                        roundDir = ( tValue ==  dValue ) ? 0
+                            :( tValue &lt; dValue ) ? 1
+                            : -1;
+                    }
+                    return (isNegative)? -rValue : rValue;
+                }
+                /*
+                 * Else we have a hard case with a negative exp.
+                 */
+            }
+        }
+
+        /*
+         * Harder cases:
+         * The sum of digits plus exponent is greater than
+         * what we think we can do with one error.
+         *
+         * Start by approximating the right answer by,
+         * naively, scaling by powers of 10.
+         */
+        if ( exp &gt; 0 ){
+            if ( decExponent &gt; maxDecimalExponent+1 ){
+                /*
+                 * Lets face it. This is going to be
+                 * Infinity. Cut to the chase.
+                 */
+                return (isNegative)? Double.NEGATIVE_INFINITY : Double.POSITIVE_INFINITY;
+            }
+            if ( (exp&amp;15) != 0 ){
+                dValue *= small10pow[exp&amp;15];
+            }
+            if ( (exp&gt;&gt;=4) != 0 ){
+                int j;
+                for( j = 0; exp &gt; 1; j++, exp&gt;&gt;=1 ){
+                    if ( (exp&amp;1)!=0)
+                        dValue *= big10pow[j];
+                }
+                /*
+                 * The reason for the weird exp &gt; 1 condition
+                 * in the above loop was so that the last multiply
+                 * would get unrolled. We handle it here.
+                 * It could overflow.
+                 */
+                double t = dValue * big10pow[j];
+                if ( Double.isInfinite( t ) ){
+                    /*
+                     * It did overflow.
+                     * Look more closely at the result.
+                     * If the exponent is just one too large,
+                     * then use the maximum finite as our estimate
+                     * value. Else call the result infinity
+                     * and punt it.
+                     * ( I presume this could happen because
+                     * rounding forces the result here to be
+                     * an ULP or two larger than
+                     * Double.MAX_VALUE ).
+                     */
+                    t = dValue / 2.0;
+                    t *= big10pow[j];
+                    if ( Double.isInfinite( t ) ){
+                        return (isNegative)? Double.NEGATIVE_INFINITY : Double.POSITIVE_INFINITY;
+                    }
+                    t = Double.MAX_VALUE;
+                }
+                dValue = t;
+            }
+        } else if ( exp &lt; 0 ){
+            exp = -exp;
+            if ( decExponent &lt; minDecimalExponent-1 ){
+                /*
+                 * Lets face it. This is going to be
+                 * zero. Cut to the chase.
+                 */
+                return (isNegative)? -0.0 : 0.0;
+            }
+            if ( (exp&amp;15) != 0 ){
+                dValue /= small10pow[exp&amp;15];
+            }
+            if ( (exp&gt;&gt;=4) != 0 ){
+                int j;
+                for( j = 0; exp &gt; 1; j++, exp&gt;&gt;=1 ){
+                    if ( (exp&amp;1)!=0)
+                        dValue *= tiny10pow[j];
+                }
+                /*
+                 * The reason for the weird exp &gt; 1 condition
+                 * in the above loop was so that the last multiply
+                 * would get unrolled. We handle it here.
+                 * It could underflow.
+                 */
+                double t = dValue * tiny10pow[j];
+                if ( t == 0.0 ){
+                    /*
+                     * It did underflow.
+                     * Look more closely at the result.
+                     * If the exponent is just one too small,
+                     * then use the minimum finite as our estimate
+                     * value. Else call the result 0.0
+                     * and punt it.
+                     * ( I presume this could happen because
+                     * rounding forces the result here to be
+                     * an ULP or two less than
+                     * Double.MIN_VALUE ).
+                     */
+                    t = dValue * 2.0;
+                    t *= tiny10pow[j];
+                    if ( t == 0.0 ){
+                        return (isNegative)? -0.0 : 0.0;
+                    }
+                    t = Double.MIN_VALUE;
+                }
+                dValue = t;
+            }
+        }
+
+        /*
+         * dValue is now approximately the result.
+         * The hard part is adjusting it, by comparison
+         * with FDBigInt arithmetic.
+         * Formulate the EXACT big-number result as
+         * bigD0 * 10^exp
+         */
+        FDBigInt bigD0 = new FDBigInt( lValue, digits, kDigits, nDigits );
+        exp   = decExponent - nDigits;
+
+        correctionLoop:
+        while(true){
+            /* AS A SIDE EFFECT, THIS METHOD WILL SET THE INSTANCE VARIABLES
+             * bigIntExp and bigIntNBits
+             */
+            FDBigInt bigB = doubleToBigInt( dValue );
+
+            /*
+             * Scale bigD, bigB appropriately for
+             * big-integer operations.
+             * Naively, we multiply by powers of ten
+             * and powers of two. What we actually do
+             * is keep track of the powers of 5 and
+             * powers of 2 we would use, then factor out
+             * common divisors before doing the work.
+             */
+            int B2, B5; // powers of 2, 5 in bigB
+            int     D2, D5; // powers of 2, 5 in bigD
+            int Ulp2;   // powers of 2 in halfUlp.
+            if ( exp &gt;= 0 ){
+                B2 = B5 = 0;
+                D2 = D5 = exp;
+            } else {
+                B2 = B5 = -exp;
+                D2 = D5 = 0;
+            }
+            if ( bigIntExp &gt;= 0 ){
+                B2 += bigIntExp;
+            } else {
+                D2 -= bigIntExp;
+            }
+            Ulp2 = B2;
+            // shift bigB and bigD left by a number s. t.
+            // halfUlp is still an integer.
+            int hulpbias;
+            if ( bigIntExp+bigIntNBits &lt;= -expBias+1 ){
+                // This is going to be a denormalized number
+                // (if not actually zero).
+                // half an ULP is at 2^-(expBias+expShift+1)
+                hulpbias = bigIntExp+ expBias + expShift;
+            } else {
+                hulpbias = expShift + 2 - bigIntNBits;
+            }
+            B2 += hulpbias;
+            D2 += hulpbias;
+            // if there are common factors of 2, we might just as well
+            // factor them out, as they add nothing useful.
+            int common2 = Math.min( B2, Math.min( D2, Ulp2 ) );
+            B2 -= common2;
+            D2 -= common2;
+            Ulp2 -= common2;
+            // do multiplications by powers of 5 and 2
+            bigB = multPow52( bigB, B5, B2 );
+            FDBigInt bigD = multPow52( new FDBigInt( bigD0 ), D5, D2 );
+            //
+            // to recap:
+            // bigB is the scaled-big-int version of our floating-point
+            // candidate.
+            // bigD is the scaled-big-int version of the exact value
+            // as we understand it.
+            // halfUlp is 1/2 an ulp of bigB, except for special cases
+            // of exact powers of 2
+            //
+            // the plan is to compare bigB with bigD, and if the difference
+            // is less than halfUlp, then we're satisfied. Otherwise,
+            // use the ratio of difference to halfUlp to calculate a fudge
+            // factor to add to the floating value, then go 'round again.
+            //
+            FDBigInt diff;
+            int cmpResult;
+            boolean overvalue;
+            if ( (cmpResult = bigB.cmp( bigD ) ) &gt; 0 ){
+                overvalue = true; // our candidate is too big.
+                diff = bigB.sub( bigD );
+                if ( (bigIntNBits == 1) &amp;&amp; (bigIntExp &gt; -expBias+1) ){
+                    // candidate is a normalized exact power of 2 and
+                    // is too big. We will be subtracting.
+                    // For our purposes, ulp is the ulp of the
+                    // next smaller range.
+                    Ulp2 -= 1;
+                    if ( Ulp2 &lt; 0 ){
+                        // rats. Cannot de-scale ulp this far.
+                        // must scale diff in other direction.
+                        Ulp2 = 0;
+                        diff.lshiftMe( 1 );
+                    }
+                }
+            } else if ( cmpResult &lt; 0 ){
+                overvalue = false; // our candidate is too small.
+                diff = bigD.sub( bigB );
+            } else {
+                // the candidate is exactly right!
+                // this happens with surprising frequency
+                break correctionLoop;
+            }
+            FDBigInt halfUlp = constructPow52( B5, Ulp2 );
+            if ( (cmpResult = diff.cmp( halfUlp ) ) &lt; 0 ){
+                // difference is small.
+                // this is close enough
+                if (mustSetRoundDir) {
+                    roundDir = overvalue ? -1 : 1;
+                }
+                break correctionLoop;
+            } else if ( cmpResult == 0 ){
+                // difference is exactly half an ULP
+                // round to some other value maybe, then finish
+                dValue += 0.5*ulp( dValue, overvalue );
+                // should check for bigIntNBits == 1 here??
+                if (mustSetRoundDir) {
+                    roundDir = overvalue ? -1 : 1;
+                }
+                break correctionLoop;
+            } else {
+                // difference is non-trivial.
+                // could scale addend by ratio of difference to
+                // halfUlp here, if we bothered to compute that difference.
+                // Most of the time ( I hope ) it is about 1 anyway.
+                dValue += ulp( dValue, overvalue );
+                if ( dValue == 0.0 || dValue == Double.POSITIVE_INFINITY )
+                    break correctionLoop; // oops. Fell off end of range.
+                continue; // try again.
+            }
+
+        }
+        return (isNegative)? -dValue : dValue;
+    }
+}
+</code></pre>
+
+<p>上面就是整个实现的源代码，之所以列出来，省的各位去找了，下面就来一行行解读：</p>
+
+<p>首先跟C语言中的实现一样，去掉了字符串前后的空格：</p>
+
+<pre><code>in = in.trim()
+</code></pre>
+
+<p>判断是否为空的字符串：</p>
+
+<pre><code>int l = in.length();
+if (l == 0) throw new NumberFormatException("empty String");
+</code></pre>
+
+<p>取出第一个字符，判断是否为正负数：</p>
+
+<pre><code>int i = 0;
+        switch (c = in.charAt(i)) {
+            case '-':
+                isNegative = true;
+                //FALLTHROUGH
+            case '+':
+                i++;
+                signSeen = true;
+        }
+</code></pre>
+
+<p>检查是否为Infinity（无穷大）或者NaN（不明确的数值结果，一般被除数为0会出现这个结果）</p>
+
+<pre><code>c = in.charAt(i);
+
+if (c == 'N' || c == 'I');
+</code></pre>
+
+<p>如果既不是Infinity或者NaN，则检查是为十六进制浮点数</p>
+
+<pre><code>else if (c == '0');
+</code></pre>
+
+<p>之后就是把字符串中的每个字符拆解出来放到array中，</p>
+
+<p>Java提供了一个方法，将字符array转化为数字，即doubleValue(),</p>
+
+<p>从doubleValue()中可以看到</p>
+
+<p>int iValue = (int)digits[0]&ndash;(int)&lsquo;0&rsquo;;</p>
+
+<p><strong>直接通过了强制类型转换进行数值的转换</strong>，剩下的任务就是异常判断以及是否为科学计数法。</p>
+
+<p><strong>总结：从上面可以看出，从算法本身来讲，Java简直弱爆了，一个用C语言十几行代码就能实现的算法，用Java却达到了一百来行的代码。</strong></p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[nginx优化篇之Linux 内核参数的优化]]></title>
+    <link href="http://365day.github.io/blog/2014/05/27/nginxyou-hua-pian-zhi-linux-nei-he-can-shu-de-you-hua/"/>
+    <updated>2014-05-27T09:43:24+08:00</updated>
+    <id>http://365day.github.io/blog/2014/05/27/nginxyou-hua-pian-zhi-linux-nei-he-can-shu-de-you-hua</id>
+    <content type="html"><![CDATA[<p>由于默认的Linux内核参数考虑的是最通用的场景，这明显不符合用于支持高并发访问的Web服务器的定义，所以需要修改Linux内核参数，使得Nginx可以拥有更高的性能。</p>
+
+<p>在优化内核时，可以做的事件很多，不过，我们通常会根据业务特点来进行调整，当Nginx作为静态Web内容服务器、反向代理服务器或是提供图片缩略功能（实时压缩图片）的服务器时，其内核参数的调整都是不同的。这里只针对最通用的、使Nginx支持更多并发请求的TCP网络参数做简单说明。</p>
+
+<p>首先，需要修改/etc/sysctl.conf来更改内核参数，例如，最常用的配置：</p>
+
+<pre><code>#原有字段
+net.ipv4.tcp_syncookies = 1
+#新增字段
+fs.file-max = 999999
+net.ipv4.tcp_tw_reuse = 1
+net.ipv4.tcp_keepalive_time = 600
+net.ipv4.tcp_fin_timeout = 30
+net.ipv4.tcp_max_tw_buckets = 5000
+net.ipv4.ip_local_port_range = 1024 61000
+net.ipv4.tcp_rmem = 10240 87380 12582912
+net.ipv4.tcp_wmem = 10240 87380 12582912
+net.core.netdev_max_backlog = 8096
+net.core.rmem_default = 6291456
+net.core.wmem_default = 6291456
+net.core.rmem_max = 12582912
+net.core.wmem_max = 12582912
+net.ipv4.tcp_max_syn_backlog = 1024
+</code></pre>
+
+<p><strong>然后执行sysctl -p命令，使上述参数生效。</strong></p>
+
+<p><strong>上面的参数意义解释如下：</strong></p>
+
+<p><strong>fs.file-max = 999999：这个参数表示进程（比如一个worker进程）可以同时打开的最大句柄数，这个参数直线限制最大并发连接数，需根据实际情况配置。</strong></p>
+
+<p><strong>net.ipv4.tcp_tw_reuse = 1：这个参数设置为1，表示允许将TIME-WAIT状态的socket重新用于新的TCP连接，这对于服务器来说很有意义，因为服务器上总会有大量TIME-WAIT状态的连接。</strong></p>
+
+<p><strong>net.ipv4.tcp_keepalive_time = 600：这个参数表示当keepalive启用时，TCP发送keepalive消息的频度。默认是2小时，若将其设置的小一些，可以更快地清理无效的连接。</strong></p>
+
+<p><strong>net.ipv4.tcp_fin_timeout = 30：这个参数表示当服务器主动关闭连接时，socket保持在FIN-WAIT-2状态的最大时间。</strong></p>
+
+<p><strong>net.ipv4.tcp_max_tw_buckets = 5000：这个参数表示操作系统允许TIME_WAIT套接字数量的最大值，如果超过这个数字，TIME_WAIT套接字将立刻被清除并打印警告信息。该参数默认为180 000，过多的TIME_WAIT套接字会使Web服务器变慢。</strong></p>
+
+<p><strong>net.ipv4.tcp_max_syn_backlog = 1024：这个参数标示TCP三次握手建立阶段接受SYN请求队列的最大长度，默认为1024，将其设置得大一些可以使出现Nginx繁忙来不及accept新连接的情况时，Linux不至于丢失客户端发起的连接请求。</strong></p>
+
+<p><strong>net.ipv4.ip_local_port_range = 1024 61000：这个参数定义了在UDP和TCP连接中本地（不包括连接的远端）端口的取值范围。</strong></p>
+
+<p><strong>net.ipv4.tcp_rmem = 10240 87380 12582912：这个参数定义了TCP接受缓存（用于TCP接受滑动窗口）的最小值、默认值、最大值。</strong></p>
+
+<p><strong>net.ipv4.tcp_wmem = 10240 87380 12582912：这个参数定义了TCP发送缓存（用于TCP发送滑动窗口）的最小值、默认值、最大值。</strong></p>
+
+<p><strong>net.core.netdev_max_backlog = 8096：当网卡接受数据包的速度大于内核处理的速度时，会有一个队列保存这些数据包。这个参数表示该队列的最大值。</strong></p>
+
+<p><strong>net.core.rmem_default = 6291456：这个参数表示内核套接字接受缓存区默认的大小。</strong></p>
+
+<p><strong>net.core.wmem_default = 6291456：这个参数表示内核套接字发送缓存区默认的大小。</strong></p>
+
+<p><strong>net.core.rmem_max = 12582912：这个参数表示内核套接字接受缓存区的最大大小。</strong></p>
+
+<p><strong>net.core.wmem_max = 12582912：这个参数表示内核套接字发送缓存区的最大大小。</strong></p>
+
+<p>net.ipv4.tcp_syncookies = 1：该参数与性能无关，用于解决TCP的SYN攻击。</p>
+
+<p><strong>注意：滑动窗口的大小与套接字缓存区会在一定程度上影响并发连接的数目。每个TCP连接都会为维护TCP滑动窗口而消耗内存，这个窗口会根据服务器的处理速度收缩或扩张。</strong></p>
+
+<p><strong>参数net.core.wmem_max = 12582912的设置，需要平衡物理内存的总大小、Nginx并发处理的最大连接数量而确定。当然，如果仅仅为了提供并发量使服务器不出现Out Of Memory问题而去降低滑动窗口大小，那么并不合适，因为滑动窗过小会影响大数据量的传输速度。net.core.rmem_default = 6291456、net.core.wmem_default = 6291456、net.core.rmem_max = 12582912和net.core.wmem_max = 12582912这4个参数的设置需要根据我们的业务特性以及实际的硬件成本来综合考虑。</strong></p>
+
+<p><strong>Nginx并发处理的最大连接量：由nginx.conf中的work_processes和work_connections参数决定。</strong></p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[CapacityScheduler调度算法]]></title>
+    <link href="http://365day.github.io/blog/2014/05/25/capacityschedulerdiao-du-suan-fa/"/>
+    <updated>2014-05-25T17:42:54+08:00</updated>
+    <id>http://365day.github.io/blog/2014/05/25/capacityschedulerdiao-du-suan-fa</id>
+    <content type="html"><![CDATA[<p>本文描述了Hadoop中的Capacity Scheduler的实现算法，Capacity Scheduler是由Yahoo贡献的，主要是解决HADOOP-3421中提出的，在调度器上完成HOD（Hadoop On Demand）功能，克服已有HOD的性能低效的缺点。它适合于多用户共享集群的环境的调度器。本文解析的计算能力调度器属于Hadoop 0.21.0。</p>
+
+<h2>一、计算能力调度器介绍</h2>
+
+<p>Capacity Scheduler支持以下特性：</p>
+
+<ul>
+<li>(1) <strong>计算能力保证。</strong>支持多个队列，某个作业可被提交到某一个队列中。每个队列会配置一定比例的计算资源，且所有提交到队列中的作业共享该队列中的资源。</li>
+<li>(2) <strong>灵活性。</strong>空闲资源会被分配给那些未达到资源使用上限的队列，当某个未达到资源的队列需要资源时，一旦出现空闲资源，便会分配给他们。</li>
+<li>(3) <strong>支持优先级。</strong>队列支持作业优先级调度（默认是FIFO）。</li>
+<li>(4) <strong>多重租赁。</strong>综合考虑多种约束防止单个作业、用户或者队列独占队列或者集群中的资源。</li>
+<li>(5) <strong>基于资源的调度。</strong> 支持资源密集型作业，允许作业使用的资源量高于默认值，进而可容纳不同资源需求的作业。不过，当前仅支持内存资源的调度。</li>
+</ul>
+
+
+<h2>二、Capacity Scheduler概述</h2>
+
+<p>Capacity Scheduling是由雅虎提出的作业调度算法，它提供了类似于Fair Scheduling算法的功能，但是在设计与实现上两者在很多方面存在着差别。</p>
+
+<p>在Capacity Scheduling算法中，可以定义多个作业队列。当作业被提交时，它将被直接放入到一个队列中。每个队列都可以通过配置获得一定数量的TaskTracker资源用于处理Map操作和Reduce操作。调度算法将按照配置文件为队列分配相应的计算资源量。同Fair Scheduling算法近似，为了提高资源利用率，对于已经被分配但是尚处于空闲状态的资源，各个队列为分享它们。当没有能够按照设定数值获得足够资源量的队列中增加了作业压力时，之前那些曾经分配给它但又被别的队列所占用的资源会在完成当前任务后立即配给回它应属的队列。由此可以看出，Capacity Scheduling算法的思路是为各个队列中的作业模拟出具有指定计算能力的独立的Hadoop集群资源，而不像Fair Scheduling算法那样试图在所有作业之间实现公平的资源分享。</p>
+
+<p>Capacity Scheduling算法在每个队列中采用的调度策略是带有优先级的FIFO算法，优先级高的作业可以在优先级低的作业之前访问队列资源。Capacity Scheduling算法不支持优先级抢占，一旦一个作业开始执行，那么在执行完成之前它所使用的资源是不会被有更高优先级的作业夺走的。另外，同属于同一用户的作业不能出现独占资源的情况，为了达到这一目的，Capacity Scheduling算法对队列中同一用户提交的作业能够获得的资源百分比进行了强制限定。</p>
+
+<p>在Capacity Scheduling算法的具体实现中，最关键的也是如何挑选合适的作业去执行。当系统中出现了空闲的TaskTracker，算法会首先选择一个具有最多空闲空间的队列，这是通过计算队列中正在运行的任务数与其分得的计算资源之间的比值是否最低来判断的。一旦一个队列被选中，调度算法就会按照作业的优先级和提交时间顺序进行选择。在选择作业的时候，还需要关注作业所属的用户是否已经超出了他所能使用的资源限制，如果是的话那么相关的作业都不能被选中。</p>
+
+<p>此外，Capacity Scheduling算法还能够有效地对Hadoop集群的内存资源进行管理，以支持内存密集型应用。如果一个作业内存资源需求较高，那么调度算法就要保证将该作业的相关任务指派到具有充足内存资源的TaskTracker上执行，以避免任务由于内存资源不足而无法执行。因此，在作业选择的过程中，Capacity Scheduling算法还需要检查空闲TaskTracker上的内存资源是否能够满足作业的内存需求。TaskTracker上的空闲资源量的数值可以通过TaskTracker的内存资源总量减去当前已经使用的内存偏移量得到，而后者是包含在TaskTracker向JobTracker发送的周期性心跳信息中。</p>
+
+<h2>三、Capacity Scheduler调度算法源码解析</h2>
+
+<p>下面对Capacity Scheduler调度算法的源码进行详细的拆解，Capacity Scheduler的整个类图如图3.1。</p>
+
+<p><img src="http://365day.github.io/images/ClassDiagram1.jpg"></p>
+
+<p>图3.1 Capacity Scheduler调度算法的整个类图</p>
+
+<h3>3.1 TaskSchedulingMgr类</h3>
+
+<h4>3.1.1 TaskSchedulingMgr类的成员和方法</h4>
+
+<p>TaskSchedulingMgr是管理任务调度的抽象类，包括如下成员：</p>
+
+<pre><code>protected CapacityTaskScheduler scheduler;
+protected TaskType type = null;
+</code></pre>
+
+<p>其中，scheduler是调度器对象，在构造函数中传入；type代表任务类型，在TaskSchedulingMgr的实现类MapSchedulingMgr和ReduceSchedulingMgr中分别取值为TaskType.Map和TaskType.Reduce。</p>
+
+<p>TaskSchedulingMgr提供了如下抽象方法：</p>
+
+<pre><code>obtainNewTask(TaskTrackerStatus taskTracker,JobInProgress job);
+getClusterCapacity();
+getTSC(QueueSchedulingContext qsc);
+hasSpeculativeTask(JobInProgress job,TaskTrackerStatus tts);
+</code></pre>
+
+<p>抽象方法到它的实现类去讨论。</p>
+
+<p>TaskSchedulingMgr的其它普通方法：</p>
+
+<pre><code>getOrderedQueues()
+</code></pre>
+
+<p>返回根据队列比较器排好序的队列，主要用来调试。</p>
+
+<pre><code>getOrderedJobQueues()
+</code></pre>
+
+<p>获取排好序的作业队列。</p>
+
+<pre><code>isUserOverLimit(JobInProgress j,QueueSchedulingContext qsc)
+</code></pre>
+
+<p>通过调用本地的getTSC()方法，获得TaskSchedulingContext类型的变量，提取TaskSchedulingContext中的参数，比较被占用的槽数是否小于实际可用的槽数，如是，则currentCapacity=实际可用的槽数；否则，currentCapacity=被占用的槽数+TaskDataView.getTaskDataView(type).getSlotsPerTask(j)。</p>
+
+<p>TaskDataView类中的getTaskDataView()方法，该方法根据Task的类型是Map还是Reduce，分别获得一个TaskDataView类型的变量，并返回，然后通过job调用getSlotsPerTask()方法。</p>
+
+<pre><code>int limit = Math.max((int) (Math.ceil((double) currentCapacity/ (double) qsc.getNumJobsByUser().size())),(int) (Math.ceil((double) (qsc.getUlMin() * currentCapacity) / 100.0)));
+</code></pre>
+
+<p>用户的ID：<code>String user = j.getProfile().getUser();</code></p>
+
+<p>如果被该用户占用的槽数>= limit，写入日志，返回True。</p>
+
+<pre><code>getTaskFromQueue(TaskTracker taskTracker,QueueSchedulingContext qsi)
+</code></pre>
+
+<p>这个方法从一个队列中取出一个task，返回的TaskLookupResult对象包含：</p>
+
+<pre><code>private LookUpStatus lookUpStatus;
+private Task task;
+</code></pre>
+
+<p>其中task才是关键信息，当然，task可能为空。具体的实现逻辑如图3.2。</p>
+
+<ul>
+<li>在队列中的选一个job，检查是否是RUNNING状态的；如果不是，重复1),否则继续；</li>
+<li>检查队列是否超出最大slot限制，或者用户的slot占有量是否超过限定，如果是则回到1),否则继续；</li>
+<li>检查tasktracker是否能满足作业的内存需求，如果满足则从作业中挑选一个任务,如代码：</li>
+<li><code>Task t = obtainNewTask(taskTrackerStatus, j)</code>;</li>
+<li>obtainNewTask()函数负责从job中未运行的任务挑选一个，该函数的具体细节容稍后讨论。 如果没能从job中找到适合的任务，则回到1)，否则成功，返回结果，结束。</li>
+</ul>
+
+
+<p><img src="http://365day.github.io/images/从队列中挑选task.jpg"></p>
+
+<p>图3.2 从队列中挑选task</p>
+
+<p>如果TaskTracker的内存不能满足作业的内存需求，那么调度器会判断该作业是否有待运行的任务或者保留的TaskTracker是否足够。如果是则回到（1），否则，将该tasktracker保留，退出函数。这里有一个机制：</p>
+
+<p>CapacitySecheduler在调度过程中考虑作业的内存需求，但是，当TaskTracker内存无法满足Job的内存需求时，系统不会把它直接放弃该TaskTracker，而是将它保留给该作业，也就是将该作业的TaskTracker的slot登记到Job的名下，这样做是为了使该作业不至于饿死。</p>
+
+<pre><code>assignTasks(TaskTracker taskTracker)
+</code></pre>
+
+<p>为TaskTracker分配task，分两种情况，如图3.3。</p>
+
+<p><img src="http://365day.github.io/images/assignTasks.jpg"></p>
+
+<p>图3.3 为TaskTracker分配task</p>
+
+<p>第一种情况，看TaskTracker是否已经被预定了：</p>
+
+<pre><code>JobInProgress job = taskTracker.getJobForFallowSlot(type);
+</code></pre>
+
+<p>如果job不为空，这表示TaskTracker的slot被job预定了，这时做以下工作：</p>
+
+<p>如果availableSlots大于等于每个task所需的slot数，那么TaskTracker释放预留的slot，并从job中挑选一个任务在TaskTracker上运行，退出。否则，重新预留TaskTracker的slot给job，并返回内存匹配失败的TaskLoogupResult对象。</p>
+
+<p>第二种情况，如果TaskTracker没有被预留，那么，从备选的队列集合中寻找适合的队列，并从队列中挑选适合的task，选出来的task必须是三种类型中的一种：TASK_FOUND，NO_TASK_FOUND或者TASK_FAILING_MEMORY_REQUIREMENT(挑选的任务内存需求得不到满足)。挑选过程的执行代码是：</p>
+
+<pre><code>TaskLookupResult tlr = getTaskFromQueue(taskTracker, qsc);
+TaskLookupResult.LookUpStatus lookUpStatus = tlr.getLookUpStatus();
+</code></pre>
+
+<p>如果以上两种都不是，则换一个队列，继续找。如果最终还没有找到，返回任务查找失败。</p>
+
+<pre><code>printQSCs()
+</code></pre>
+
+<p>打印作业队列信息，用于调试。</p>
+
+<pre><code>hasSpeculativeTask(TaskInProgress[] tips, TaskTrackerStatus tts)
+</code></pre>
+
+<p>检查TaskTracker是否已经被某个作业预留了。</p>
+
+<h4>3.1.2 TaskSchedulingMgr的内部类</h4>
+
+<p><strong>1) 内部类QueueComparator</strong></p>
+
+<p>类QueueComparator实现了接口Comparator，对AbstractQueue对象进行排序，排序算法定义了compare()方法，比较的就是AbstractQueue对象。首先调用AbstractQueue对象中的getQueueSchedulingContext()方法，返回的类型为QueueSchedulingContext，然后调用了本地方法getTSC()，返回的是TaskSchedulingContext。</p>
+
+<p>调用TaskSchedulingContext中的getCapacity方法，判断返回的值是否是0，若为0则值为1.0f，否则为：(double) t1.getNumSlotsOccupied() / (double) t1.getCapacity()</p>
+
+<p><strong>2) 内部类MapQueueComparator</strong></p>
+
+<p>该类继承类上面的类QueueComparator，只定义了一个方法，传入的类型是QueueSchedulingContext，通过调用该类中的getMapTSC()方法，返回的类型是TaskSchedulingContext。</p>
+
+<p><strong>3) 内部类ReduceQueueComparator</strong></p>
+
+<p>该类同样继承了QueueComparator，也只定义了一个方法，通过调用QueueSchedulingContext类中的getReduceTSC()方法，返回的类型是TaskSchedulingContext。</p>
+
+<p><strong>4) MapSchedulingMgr/ReduceSchedulingMgr</strong></p>
+
+<p>两个类都继承自TaskSchedulingMgr,实现了抽象方法。</p>
+
+<p><strong>A) 类MapSchedulingMgr</strong></p>
+
+<p>我们先讨论抽象方法在类MapSchedulingMgr中的实现。</p>
+
+<pre><code>obtainNewTask(TaskTrackerStatus taskTracker, JobInProgress job)
+</code></pre>
+
+<p>这个函数是针对TaskTracker，从job中挑选一个task。</p>
+
+<p>下面几个函数都是从简单的读取相应的变量，比较简单所以不讨论。</p>
+
+<p>getClusterCapacity()读取集群的容量，即slot数</p>
+
+<p>getTSC(QueueSchedulingContext qsi) 返回TaskSchedulingContext对象</p>
+
+<p>hasSpeculativeTask(JobInProgress job, TaskTrackerStatus tts) 作业在taskTracker上是否有预留任务。</p>
+
+<p><strong>B) 类ReduceSchedulingMgr</strong></p>
+
+<p>它的实现与MapSchedulingMgr一样，代码片段如下：</p>
+
+<pre><code>obtainNewTask(TaskTrackerStatus taskTracker, JobInProgress job)ClusterStatus clusterStatus = scheduler.taskTrackerManager.getClusterStatus();
+int numTaskTrackers = clusterStatus.getTaskTrackers();
+return job.obtainNewReduceTask(taskTracker, numTaskTrackers,scheduler.taskTrackerManager.getNumberOfUniqueHosts());
+</code></pre>
+
+<h3>3.2 CapacityTaskScheduler类</h3>
+
+<p>CapacityTaskScheduler类是计算能力调度算法的主类，它主要实现了计算能力的算法，类图如图3.4。</p>
+
+<p><img src="http://365day.github.io/images/CapacityTaskScheduler.jpg"></p>
+
+<p>图3.4 CapacityTaskScheduler类图</p>
+
+<h4>3.2.1 核心成员变量</h4>
+
+<p>(1) <code>TaskSchedulingMgr mapScheduler = new MapSchedulingMgr(this)</code></p>
+
+<p>Map任务的调度器</p>
+
+<p>(2) <code>TaskSchedulingMgr reduceScheduler = new ReduceSchedulingMgr(this)</code></p>
+
+<p>Reduce任务的调度器</p>
+
+<p>(3) <code>MemoryMatcher memoryMatcher = new MemoryMatcher();</code></p>
+
+<p>用与内存匹配</p>
+
+<p>(4) <code>JobQueuesManager jobQueuesManager</code></p>
+
+<p>队列管理</p>
+
+<h4>3.2.2 CapacityTaskScheduler类实现了TaskScheduler类的方法  </h4>
+
+<p>CapacityTaskScheduler类实现了TaskScheduler类，实现核心方法为：</p>
+
+<p><strong> (1) start()方法</strong></p>
+
+<p>这是MapReduce调度器的入口，在JobTracker的开始位置就是调用此方法，函数offerService()中有一句
+taskScheduler.start(); taskScheduler是通过反射完成实例化</p>
+
+<p>代码如下：</p>
+
+<pre><code>Class&lt;? extends TaskScheduler&gt; schedulerClass=conf.getClass("mapred.jobtracker.taskScheduler",JobQueueTaskScheduler.class, TaskScheduler.class);
+taskScheduler =  (TaskScheduler)ReflectionUtils.newInstance(schedulerClass, conf);
+</code></pre>
+
+<p>回到正题，start()的主要任务是：初始化配置信息，初始化队列，添加作业监听器（JobQueueManager）。start()方法的执行流程如图3.5。</p>
+
+<p><img src="http://365day.github.io/images/start()方法流程图.jpg"></p>
+
+<p>图3.5 start()方法的执行流程
+ 
+ start()方法的执行步骤：</p>
+
+<p>步骤一、初始化内存相关的信息，主要是初始化如下四个参数memSizeForMapSlotOnJT：每个map槽使用的内存大小；</p>
+
+<ul>
+<li>memSizeForReduceSlotOnJT：每个reduce槽使用的内存大小；</li>
+<li>limitMaxMemForMapTasks：map任务的最大内存限制；</li>
+<li>limitMaxMemForReduceTasks：reduce任务的最大内存限制。</li>
+</ul>
+
+
+<p>步骤二、从配置文件map-site.xml读取队列信息；</p>
+
+<p>步骤三、从配置设置capacity-scheduler.xml初始化队列；</p>
+
+<p>步骤四、完整性检查：确保应至少有一个队列；</p>
+
+<p>步骤五、创建一个新的queue-hierarchy builder和尝试加载完整的层次结构的队列；</p>
+
+<p>步骤六、创建JobQueue对象。 通知JobQueuesManager ，以便它可以跟踪running/waiting作业。 JobQueuesManager仍然是不作为监听器添加到JobTracker ，所以没有必要同步。</p>
+
+<p>步骤七、由于创建/更改了QueueSchedulingContext对象。把它们放到队列信息中，以确保用户界面能够即时查看 。</p>
+
+<p>步骤八、队列已经准备完成。现在注册jobQueuesManager与JobTracker ，以监听作业变动；</p>
+
+<p>步骤九、开启初始化作业的线程，见JobInitializationPoller类的方法；</p>
+
+<p>步骤十、start()方法执行完毕。</p>
+
+<p><strong>(2) terminate()方法</strong></p>
+
+<p>终止调度器，步骤如下：</p>
+
+<p>步骤一、判断作业调度器是否启动， 如启动则执行步骤二；</p>
+
+<p>步骤二、判断作业队列管理类是否为空，如果不为空，则清空作业队列；</p>
+
+<p>步骤三、终止初始化作业的线程。</p>
+
+<p>步骤四、terminate()方法执行完毕。</p>
+
+<p><strong>(3) assignTasks(TaskTracker taskTracker)方法</strong></p>
+
+<p>声明如下：</p>
+
+<pre><code>public synchronized List&lt;Task&gt; assignTasks(TaskTracker taskTracker)
+</code></pre>
+
+<p>用一句话讲就是：通过一定的算法为给定的TaskTracker分配计算任务，返回结果就是计算任务集合，一般情况下是一个Map任务和一个Reduce任务。</p>
+
+<p>那么对于CapacityScheduler来说采用的算法策略是：当某个tasktracker上出现空闲slot时，调度器依次选择一个queue、（选中的queue中的）job、（选中的job中的）task，并将该slot分配给该task，如图3.6。这些过程已经在上面的TaskScheduling及其实现类的相关方法中讨论过了。</p>
+
+<p><img src="http://365day.github.io/images/计算能力算法策略.jpg"></p>
+
+<p>图3.6 计算能力调度算法策略</p>
+
+<p><strong>(4) getJobs(String queueName)</strong></p>
+
+<p>声明：</p>
+
+<pre><code>public synchronized Collection&lt;JobInProgress&gt; getJobs(String queueName)
+</code></pre>
+
+<p>根据队列名获取队列中的作业集合。</p>
+
+<h4>3.2.3 CapacityTaskScheduler类实现了TaskScheduler类的内部类QueueRefresher</h4>
+
+<p>这是一个重要的内部类，该类所实现的方法只有具有管理员权限的用户可以操作，由你们提出的作业队列的动态配置能否实现全在于该类是如何设计的，下面我们先来看看CapacityScheduler作业调度器是如何实现该内部类的。</p>
+
+<p>CapacityScheduler作业调度器重写了该内部类的refreshQueues()方法，refreshQueues()方法的执行步骤如图3.7。</p>
+
+<p><img src="http://365day.github.io/images/refreshQueues()方法.jpg"></p>
+
+<p>图3.7 refreshQueues()方法的执行步骤</p>
+
+<p>步骤一、判断作业调度器是否已经启动，如果未启动，则不能刷新队列；</p>
+
+<p>步骤二、跟start()方法一样，它也调用了initializeQueues() 方法；</p>
+
+<p>步骤三、判断根队列是否为空，若为空，则不能初始化根队列为空的队列；</p>
+
+<p>步骤四、完整性检查：确保应至少有一个队列；</p>
+
+<p>步骤五、创建一个新的queue-hierarchy builder和尝试加载完整的层次结构的队列；</p>
+
+<p>步骤六、创建根队列newRootAbstractQueue；</p>
+
+<p>步骤七、以newRootAbstractQueue为根队列，创建一个完整的层次结构（下面的步骤是如何创建完整的层次结构）；</p>
+
+<p>步骤八、检查子队列是否有更多的子队列，若有则遍历子队列；若无，则执行步骤十二；</p>
+
+<p>步骤九、检查当前被遍历到的子队列是否还有更多的子队列。若有，则生成一个新的ContainerQueue，然后递归创建层次结构；</p>
+
+<p>步骤十、更新totalCapacity；</p>
+
+<p>步骤十一、递归创建子层次结构；</p>
+
+<p>步骤十二、如果这不是一个JobQueue，创建一个JobQueue（加载了配置文件中的一些有关队列的信息）；</p>
+
+<p>步骤十三、检查每个层次的totalCapacity，对子队列的totalCapacity不应超过100 ；</p>
+
+<p>步骤十四、向层次结构提交更改请求前，请对调度器加锁；</p>
+
+<p>步骤十五、复制前做一些验证，如果队列的是否支持优先级改变了，则抛出异常，当前调度器还未支持是否支持优先级的改变；</p>
+
+<p>步骤十六、首先递归更新子队列；</p>
+
+<p>步骤十七、现在，复制根队列本身的配置；</p>
+
+<p>步骤十八、调用JobInitializationPoller类的refreshQueueInfo()方法——刷新与初始化缓存有关的调度配置。缓存的配置，目前只能由主线程在初始化中使用。因此，主线程的迭代自动检查任何更新。</p>
+
+<p>步骤十九、refreshQueues()方法执行完毕。</p>
+
+<p><strong>对于步骤十五，改变当前队列是否支持优先级这一点，我们是这样理解的，队列中的作业是存储在一个Map数组中的，Map数组的比较器是可以改变的，但是改变了之后，由于Map之间是直接复制的，即使改变了该方案，Map的排列方式并未发生改变，且如果突然改变了是否支持优先级这一点。如果有新的作业提交，Map的队列会造成混乱（如果有新的成果该处会及时更新）。</strong></p>
+
+<h3>3.3 MemoryMatcher类</h3>
+
+<h4>3.3.1 MemoryMatcher类的成员变量</h4>
+
+<p>类包含的主要成员变量如下：</p>
+
+<pre><code>memSizeForMapSlotOnJT = JobConf.DISABLED_MEMORY_LIMIT;
+</code></pre>
+
+<p>对应于mapreduce.cluster.mapmemory.mb 设置的值，JobTracker上的Map槽的内存大小。</p>
+
+<pre><code>memSizeForReduceSlotOnJT = JobConf.DISABLED_MEMORY_LIMIT;
+</code></pre>
+
+<p>对应于mapreduce.cluster.reducememory.mb设置的值，JobTracker上的Reduce槽的内存大小。</p>
+
+<pre><code>limitMaxMemForMapTasks = JobConf.DISABLED_MEMORY_LIMIT;
+</code></pre>
+
+<p>Map任务的最大内存限制。</p>
+
+<pre><code>limitMaxMemForReduceTasks = JobConf.DISABLED_MEMORY_LIMIT;
+</code></pre>
+
+<p>Reduce任务的最大内存限制。</p>
+
+<h4>3.3.2 MemoryMatcher类的方法</h4>
+
+<pre><code>getMemReservedForTasks(TaskTrackerStatus taskTracker,TaskType taskType)
+</code></pre>
+
+<p>获取给定的TaskTracker的内存使用情况。计算方法是依据TaskTracker的上报信息(TaskStatus)来计算。
+matchesMemoryRequirements(JobInProgress job, TaskType taskType,TaskTrackerStatus taskTracker)
+这是MemoryMatcher的核心函数，主要判断TaskTracker是否能满足指定Job的内存需求。</p>
+
+<pre><code>isSchedulingBasedOnMemEnabled
+</code></pre>
+
+<p>调度算法是否支持内存的调度。</p>
+
+<h3>3.4 JobInitializationPoller类</h3>
+
+<p>关于作业的初始化，初始化的逻辑是由一个主线程和几个工作线程构成，其中，主线程周期性的从scheduler中“拖”一部分作业，把这些作业赋给工作线程，让工作线程去完成。“拖”选作业的原则是作业被调度的可能性较大，作业被调度的可能性主要：用户的作业限制，队列的容量限制。同时，高优先级的作业总是被优先初始化。</p>
+
+<p>作业的初始化工作需要占用JobTracker的内存，因此有必要限定每个队列的初始化作业的数量。</p>
+
+<h4>3.4.1 JobInitializationPoller类的成员变量</h4>
+
+<p>类包含的主要成员变量如下：</p>
+
+<ul>
+<li>(1) <code>private JobQueuesManager jobQueueManager;</code>作业管理器</li>
+<li>(2) <code>private long sleepInterval;</code>线程间隔时间</li>
+<li>(3) <code>private int poolSize;</code>初始化规模数</li>
+<li>(4) <code>private HashMap&lt;JobID, JobInProgress&gt; initializedJobs;</code>已经初始化的作业集合</li>
+<li>(5) <code>private volatile boolean running;</code> 正在运行与否</li>
+<li>(6) <code>private TaskTrackerManager ttm;</code></li>
+<li>(7) <code>private HashMap&lt;String, JobInitializationThread&gt; threadsToQueueMap;</code>队列与为之服务的工作线程的映射关系。</li>
+</ul>
+
+
+<p>在讨论函数前，先把它的内部类搞定。</p>
+
+<h4>3.4.2 内部类</h4>
+
+<p>类JobInitializationThread</p>
+
+<p>类JobInitializationThread的成员变量</p>
+
+<ul>
+<li>(1) <code>private JobInProgress initializingJob;</code>正在初始化的作业</li>
+<li>(2) <code>private volatile boolean startIniting;</code>是否开始初始化</li>
+<li>(3) <code>private AtomicInteger currentJobCount = new AtomicInteger(0);</code> 初始化作业数，它是一个原子类型。</li>
+</ul>
+
+
+<p>下面从执行流程来分析JobInitializationThread。</p>
+
+<p>首先肯定是run()函数，它只调用了initializeJobs()，这个函数的主要工作是：</p>
+
+<p>循环执行：获取每个队列的首个任务进行初始化，初始化工作由TastTrackerManager的initJob()函数完成。
+这就是JobInitializationThread的核心。其它函数比较简单，在此不讨论了。</p>
+
+<h4>3.4.3 JobInitializationPoller类的方法</h4>
+
+<p>(1) <code>init(Set&lt;String&gt; queues, CapacitySchedulerConf capacityConf)</code></p>
+
+<p>初始化函数，相当重要，它直接被CapacityTaskScheduler的start()函数调用，如图3.8。</p>
+
+<p><img src="http://365day.github.io/images/JobInitializationPoller类的init()方法.jpg"></p>
+
+<p>图3.8 初始化函数执行流程</p>
+
+<ul>
+<li>首先，确定两个变量sleepInterval（线程执行的睡眠时间），poolSize（取初始化线程数（由配置文件的”<code>mapred.capacity-scheduler.init-worker-threads</code>”决定，默认值是5）和队列大小中的较小值）的大小。</li>
+<li>其次，为队列分配初始化线程（工作线程），见函数assignThreadsToQueues()。</li>
+<li>最后，启动所有工作线程。</li>
+</ul>
+
+
+<p>(2) assignThreadsToQueues()</p>
+
+<p>服务于每个队列的初始化线程的分配工作，由这个函数搞定。
+首先创建poolSize个线程，每个线程服务${队列数/poolSize}个队列。当然，这样分配会发现有些队列没有分配线程，因此，再按照roundrobin算法（从poolSize个线程中挑选）为队列分配线程。</p>
+
+<p>(3) run()</p>
+
+<p>循环：</p>
+
+<ul>
+<li>1.清除已经初始化的作业列表；</li>
+<li>2.选择即将初始化的作业（调用selectJobsToInitialize()），如图3.9；</li>
+</ul>
+
+
+<p><img src="http://365day.github.io/images/选择即将初始化的作业.jpg"></p>
+
+<p>图3.9 选择即将初始化的作业</p>
+
+<p>selectJobsToInitialize()，主要干活的是接下来的函数getJobsToInitialize(String)：选择作业的核心是这个函数，参数是队列名称。循环迭代队列的每一个作业：检查作业是否已经被初始化；检查队列最大初始化作业数的限制是否满足；用户限制是否满足；确认该作业还没有被kill掉。最后，将作业加入初始化队列。</p>
+
+<h2>四、作业队列管理</h2>
+
+<p>CapacityScheduler作业调度器定义了一个抽象的父类AbstractQueue来管理队列，同时用继承AbstractQueue的两个子类来管理队列的详细信息，最后用一个JobQueuesManager来管理所有队列。图5.1为CapacityScheduler的作业队列管理类。</p>
+
+<p><img src="http://365day.github.io/images/CapacityScheduler作业队列管理.jpg"></p>
+
+<p>图4.1 CapacityScheduler的作业队列管理类</p>
+
+<h3>4.1 QueueSchedulingContext类</h3>
+
+<p>CapacityScheduler调度器定义了一个基类来管理队列的信息QueueSchedulingContext，该基类中主要包含了如下信息</p>
+
+<ul>
+<li>queueName——队列的名称；</li>
+<li>mapCapacity—— 队列的map任务在集群中的最大能力；</li>
+<li>reduceCapacity——队列的reduce任务在集群中的最大能力；</li>
+<li>capacityPercent——集群中在此队列中对作业有效的槽数量的百分比；</li>
+<li>maxCapacityPercent——它的作用是当集群中有未在配置文件中指定能力百分比的队列时，这些队列会根据剩下的能力百分比是否能为它们分配一个百分比而设定的值；例如，在配置文件中我们为一个队列设定了能力百分比为70%，同时还有两个队列未在配置文件中指定能力百分比，则剩下的30%/未配置的队列数，此处为15%，将15%跟maxCapacityPercent比较，若它的值大于15%，则将剩下的30%的能力指定给某一个队列；</li>
+<li>numJobsByUser——队列中拥有作业的用户数；</li>
+<li>ulMin——用户数限制的最小值；</li>
+<li>supportsPriorities ——队列是否支持优先级；</li>
+<li>numOfWaitingJobs ——等待作业的数量；</li>
+<li>prevMapCapacity ——MapCapacity的状态；</li>
+<li>prevReduceCapacity ——ReduceCapacity的状态；</li>
+<li>mapTSC——TaskSchedulingContext对象；</li>
+<li>reduceTSC——TaskSchedulingContext对象。</li>
+<li>TaskSchedulingContext是为了分别针对不同任务类型而设计的，它包含了如下信息：</li>
+<li>capacity——实际能力，这取决于集群中还有多少槽是可用的；</li>
+<li>numRunningTasks——正在运行的task数；</li>
+<li>numSlotsOccupied——被占用的槽数；</li>
+<li>maxCapacity——实际可扩展的能力，这取决于集群中还有多少槽是可用的；</li>
+<li>numSlotsOccupiedByUser——用户占用的槽数。</li>
+</ul>
+
+
+<h3>4.2 AbstractQueue类</h3>
+
+<p>AbstractQueue类是一个抽象类，它是队列层次的父类，所有队列继承这个类。</p>
+
+<p>即使所有的队列类继承这个类，也只定义了2种类别的队列。一种是ContainerQueue类，即复合队列；另一种是JobQueue，即分级队列。通常情况下，ContainerQueue由JobQueue组成。JobQueue包括实际的作业列表，即runningJob，WaitingJob等。这样做是为了确保所有与作业相关的数据是在一个地方。</p>
+
+<h4>4.2.1 AbstractQueue类的方法</h4>
+
+<ul>
+<li>(1) <code>update(int mapClusterCapacity, int reduceClusterCapacity)</code></li>
+<li>此处其实就是调用QueueSchedulingContext类中的updateContext()方法，来更新QueueSchedulingContext类中的成员变量。</li>
+<li>(2) <code>getDescendentJobQueues()</code></li>
+<li>(3) <code>getDescendantContainerQueues();</code></li>
+<li>(4) <code>sort(Comparator queueComparator)</code></li>
+<li>(5) <code>getChildren()</code></li>
+<li>(6) <code>addChild(AbstractQueue queue)</code></li>
+<li>(7) <code>distributeUnConfiguredCapacity()</code></li>
+<li>(2)~(7)均为抽象方法，到实现类中再讨论。</li>
+<li>(8) <code>validateAndCopyQueueContexts(AbstractQueue sourceQueue)</code> 该方法主要是验证且复制队列信息。在复制前，先对队列进行验证，主要是为了提示用户新队列是否支持优先级。更新时，首先递归更新子队列。然后，复制根队列本身的配置。</li>
+</ul>
+
+
+<h4>4.2.2 内部类</h4>
+
+<pre><code>AbstractQueueComparator
+</code></pre>
+
+<p>构造比较器，比较队列的名称。</p>
+
+<h3>4.3 JobQueue类</h3>
+
+<p>JobQueue就是维持一个队列的基本信息，包括了如下信息：</p>
+
+<ul>
+<li>comparator——队列的比较器，主要就是是否支持优先级；若不支持优先级，则根据作业的提交时间先后来对队列进行排序，如果作业的提交时间是一样的，则根据分配给作业的ID排序；</li>
+<li>waitingJobs——队列中处于等待状态的作业数；</li>
+<li>runningJobs——队列中处于运行状态的作业数；</li>
+</ul>
+
+
+<p>(1) JobQueue类的主要方法：</p>
+
+<p>update()方法：此方法是更新当前队列</p>
+
+<p>QueueSchedulingContext和TaskSchedulingContext中处于RUNNING状态job的信息。主要做工作的是updateStatsOnRunningJob() 方法，updateStatsOnRunningJob() 方法首先判断作业的状态是否是RUNNING状态的，如果不是，则结束该方法；若是，则继续执行。</p>
+
+<p>更新numRunningTasks和numSlotsOccupied和numSlotsOccupiedByUser。</p>
+
+<p>(2) getWaitingJobs()：获取正在等待的作业数。</p>
+
+<p>Collections.unmodifiableCollection(new LinkedList<JobInProgress>(waitingJobs.values()));</p>
+
+<p>(3) getRunningJobs()：获取处于RUNNING状态的作业列表。</p>
+
+<ul>
+<li><code>Collections.unmodifiableCollection(new LinkedList&lt;JobInProgress&gt;(runningJobs.values()))</code></li>
+<li><code>addRunningJob(JobInProgress job)</code>：添加处于RUNNING状态的作业。</li>
+<li><code>runningJobs.put(new JobSchedulingInfo(job), job)</code>;</li>
+<li><code>removeRunningJob(JobSchedulingInfo jobInfo)</code>:移除处于RUNNING状态的作业。</li>
+<li><code>runningJobs.remove(jobInfo)</code></li>
+<li><code>removeWaitingJob(JobSchedulingInfo schedInfo)</code>：移除处于WAITING状态的作业。</li>
+<li><code>addWaitingJob(JobInProgress job)</code>：添加处于WAITING状态的作业。</li>
+<li><code>waitingJobs.put(new JobSchedulingInfo(job), job)</code>;</li>
+<li><code>getWaitingJobCount()</code>：获取处于WAITING状态的作业数。</li>
+<li><code>waitingJobs.size()</code>;</li>
+<li><code>jobAdded(JobInProgress job)</code>：在队列中加入一个作业。它首先加入处于WAITING状态的Map函数中，然后获取该作业所属用户在队列中的作业数。如果之前没有该用户的作业，则设置该用户所属的作业数为1。然后，计算运行一个单一的map/reduce任务所需要的槽数。</li>
+<li><code>jobCompleted(JobInProgress job)</code>：当一个作业完成的时候，更新相关参数，比如该作业所属于的用户在队列中占有的作业数等等。</li>
+<li><code>reorderJobs(JobInProgress job, JobSchedulingInfo oldInfo)</code>：当作业的优先级或者提交时间改变时，重新排序队列。</li>
+<li><code>jobUpdated(JobChangeEvent event)</code>：如果作业的状态改变了，首先如果作业的优先级或者提交时间改变了，则重新排序队列。否则如果作业的运行状态改变了，如果状态变为SUCCEEDED或者FAILED或者KILLED，执行jobCompleted(job, oldJobStateInfo);方法；否则，如果状态变为RUNNING，则执行addRunningJob(job)方法。</li>
+</ul>
+
+
+<h3>4.3 ContainerQueue类</h3>
+
+<p>继承AbstractQueue，队列结构的复合类。</p>
+
+<pre><code>private List&lt;AbstractQueue&gt; children;
+</code></pre>
+
+<p>存储子队列的数组；</p>
+
+<p>ContainerQueue类实现父类AbstractQueue的如下方法：</p>
+
+<pre><code>updateChildrenContext()
+</code></pre>
+
+<p>为子队列设置正常的能力值，然后更新子队列。</p>
+
+<p>该方法遍历存储子队列的数组，为每个子队列更新计算能力信息，同时更新对象TaskSchedulingContext中的信息。</p>
+
+<h3>4.4 队列管理类JobQueuesManager</h3>
+
+<p>它利用一个Map函数jobQueues维护JobQueue对象，即维护一个队列。提供了如下方法：</p>
+
+<pre><code>addQueue(JobQueue queue)
+jobQueues.put(queue.getName(), queue);
+</code></pre>
+
+<p>根据队列名称，增加一个队列。</p>
+
+<pre><code>jobAdded(JobInProgress job)
+</code></pre>
+
+<p>向某一个队列加入一个作业，它是根据作业所属队列名称而加入指定的队列。</p>
+
+<pre><code>JobQueue qi = getJobQueue(job.getProfile().getQueueName());
+qi.jobAdded(job);
+jobUpdated(JobChangeEvent event)
+</code></pre>
+
+<p>根据作业的改变状态，更新作业所在的队列。</p>
+
+<pre><code>getComparator(String queue)
+</code></pre>
+
+<p>获取队列的调度规则，即本队列是否支持优先级。</p>
+
+<pre><code>getJobQueue(JobInProgress jip)
+</code></pre>
+
+<p>根据队列名称获取队列。</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Linux内核源码详解——命令篇之iostat]]></title>
+    <link href="http://365day.github.io/blog/2014/05/17/linuxnei-he-yuan-ma-xiang-jie-ming-ling-pian-zhi-iostat/"/>
+    <updated>2014-05-17T18:09:20+08:00</updated>
+    <id>http://365day.github.io/blog/2014/05/17/linuxnei-he-yuan-ma-xiang-jie-ming-ling-pian-zhi-iostat</id>
+    <content type="html"><![CDATA[<p>本文主要分析了Linux的iostat命令的源码，iostat的主要功能见博客：<a href="http://www.loveyqq.tk/blog/2014/05/09/xing-neng-ce-shi-jin-jie-zhi-nan-ji-chu-pian-zhi-ci-pan-io/">性能测试进阶指南——基础篇之磁盘IO</a></p>
+
+<p>iostat源码共563行，应该算是Linux系统命令代码比较少的了。源代码中主要涉及到如下几个Linux的内核文件：</p>
+
+<ul>
+<li>1、<strong>/proc/diskstats</strong>——该文件是内核2.6以上的系统中的，记录了从Linux系统启动之后，所有磁盘的相关信息，该文件中每个参数代表的意义可以自行google或者baidu，或者见博客：<a href="http://blog.csdn.net/tenfyguo/article/details/7477526">/proc/diskstats参数含义</a>。</li>
+<li>2、<strong>/proc/partitions</strong>——partitions是2.4版本的系统中的，其含义基本与diskstats一样。</li>
+<li>3、<strong>/proc/stat</strong>——stat记录了自系统启动之后，CPU的信息，具体含义可以参考博客：性能测试进阶指南——基础篇一（系统资源的讲解）</li>
+<li>4、<strong>/proc/cpuinfo</strong>——iostat主要是从该内核文件中获取cpu的核心数的。</li>
+</ul>
+
+
+<h3>iostat源码解析</h3>
+
+<p><strong>第一步，从/proc/cpuinfo中获取系统的cpu核心数，通过计算该文件中processor出现的次数便可以得到cpu的核心数；</strong></p>
+
+<p><strong>第二步，通过判断文件/proc/diskstats和/proc/partitions是否存在，从而判断linux的内核是2.4版本还是2.6版本：如果/proc/diskstats文件存在，则为2.6版本；否则判断/proc/partitions是否存在，若存在，则为2.4版本；</strong></p>
+
+<p><strong>第三部，分析iostat命令输入的参数，每个参数的功能可以在上一篇博客中找到：</strong><a href="http://www.loveyqq.tk/blog/2014/05/09/xing-neng-ce-shi-jin-jie-zhi-nan-ji-chu-pian-zhi-ci-pan-io/">性能测试进阶指南——基础篇之磁盘IO</a></p>
+
+<p><strong>第四步，初始化，获取磁盘名称。以内核2.6为例，读取文件/proc/diskstats</strong></p>
+
+<pre><code>104    0 cciss/c0d0 49787 19805 1597284 159946 20172754 28596938 390157514 1583532 0 1352168 1737502  
+</code></pre>
+
+<p><strong>第一个参数104和第二个参数0分别代表了major和minor，major是8的倍数，minor是16的倍数，只要同时符合这两个的条件，其对应的第三个参数cciss/c0d0便是所需要获取的磁盘名称；</strong></p>
+
+<p><strong>第五步，进入主循环：</strong></p>
+
+<p><strong>(1) 获取/proc/diskstats中每个磁盘的数据</strong>，例如：</p>
+
+<pre><code>104    0 cciss/c0d0 49787 19805 1597284 159946 20172754 28596938 390157514 1583532 0 1352168 1737502
+</code></pre>
+
+<p>每个参数对应的值为</p>
+
+<pre><code>104——major  
+0——minor  
+49787——rd_ios  
+19805——rd_merges  
+1597284——rd_sectors  
+159946——rd_ticks  
+20172754——wr_ios  
+28596938——wr_merges  
+390157514——wr_sectors  
+1583532——wr_ticks  
+1352168——ticks  
+1737502——aveq  
+</code></pre>
+
+<p><strong>(2) 获取/proc/stat中的数据，计算cpu的平均时间：分别获取cpu的user时间，nice时间，system时间，idle时间，iowait时间。计算中将nice时间并入user时间，将irq时间和softirq时间并入system时间。此处只计算cpu的平均和状态，不计算每隔核单独的状态。</strong></p>
+
+<p><strong>(3)计算deltams时间，其中HZ是Linux的系统频率。</strong></p>
+
+<pre><code>deltams = 1000.0 * ((new_cpu.user + new_cpu.system + new_cpu.idle + new_cpu.iowait) - (old_cpu.user + old_cpu.system + old_cpu.idle + old_cpu.iowait)) / ncpu / HZ; `
+</code></pre>
+
+<p><strong>(4)计算IO</strong></p>
+
+<pre><code>blkio.rd_ios = new_blkio[p].rd_ios - old_blkio[p].rd_ios;
+blkio.rd_merges = new_blkio[p].rd_merges - old_blkio[p].rd_merges;
+blkio.rd_sectors = new_blkio[p].rd_sectors - old_blkio[p].rd_sectors;
+blkio.rd_ticks = new_blkio[p].rd_ticks - old_blkio[p].rd_ticks;
+blkio.wr_ios = new_blkio[p].wr_ios - old_blkio[p].wr_ios;
+blkio.wr_merges = new_blkio[p].wr_merges - old_blkio[p].wr_merges; 
+blkio.wr_sectors = new_blkio[p].wr_sectors - old_blkio[p].wr_sectors;
+blkio.wr_ticks = new_blkio[p].wr_ticks - old_blkio[p].wr_ticks;
+blkio.ticks = new_blkio[p].ticks - old_blkio[p].ticks;
+blkio.aveq = new_blkio[p].aveq - old_blkio[p].aveq;
+n_ios  = blkio.rd_ios + blkio.wr_ios;
+n_ticks = blkio.rd_ticks + blkio.wr_ticks;
+n_kbytes = (blkio.rd_sectors + blkio.wr_sectors) / 2.0;
+queue = blkio.aveq / deltams;
+size = n_ios ? n_kbytes / n_ios : 0.0;
+wait = n_ios ? n_ticks / n_ios : 0.0;
+svc_t = n_ios ? blkio.ticks / n_ios : 0.0;
+busy = 100.0 * blkio.ticks / deltams; 
+if (busy &gt; 100.0) busy = 100.0;
+</code></pre>
+
+<p><strong>rd_sectors和wr_sectors是扇区数，如果需要换算成KB等单位，需要除以2，1KB=2*512Bytes。512Bytes为1个扇区数。</strong></p>
+
+<p><strong>(5)计算CPU</strong></p>
+
+<pre><code>cpu.user = new_cpu.user - old_cpu.user;
+cpu.system = new_cpu.system - old_cpu.system;
+cpu.idle = new_cpu.idle - old_cpu.idle;
+cpu.iowait = new_cpu.iowait - old_cpu.iowait;
+total = (cpu.user + cpu.system + cpu.idle + cpu.iowait) / 100.0;
+printf("%3.0f %3.0f ", cpu.user / total, cpu.system / total);
+if (kernel == 6) printf("%3.0f ", cpu.iowait / total);
+printf("%3.0f", cpu.idle / total);
+</code></pre>
+
+<p><strong>(6) Save old stats：</strong></p>
+
+<pre><code>old_blkio[p] = new_blkio[p];
+old_cpu = new_cpu;
+</code></pre>
+
+<p>每隔采样时间循环执行第五步。</p>
+
+<p><strong>从源码中可以看出，第一次获取的时候，是没有old stats的，所有的old stats值均为0，即iostat在第一次输出的值为Linux启动之后至当前时间的一个平均状态值，在之后的输出值则为系统当前的实时磁盘I/O信息和CPU信息。</strong></p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[性能测试进阶指南——基础篇之磁盘IO]]></title>
+    <link href="http://365day.github.io/blog/2014/05/09/xing-neng-ce-shi-jin-jie-zhi-nan-ji-chu-pian-zhi-ci-pan-io/"/>
+    <updated>2014-05-09T15:00:22+08:00</updated>
+    <id>http://365day.github.io/blog/2014/05/09/xing-neng-ce-shi-jin-jie-zhi-nan-ji-chu-pian-zhi-ci-pan-io</id>
+    <content type="html"><![CDATA[<p>本文旨在帮助测试人员对性能测试常用指标做一个简单的讲解，主要包括CPU、内存、磁盘和网络带宽等系统资源，本文仅仅局限于Linux系统，Windows Server系统暂不做考虑。</p>
+
+<h2>使用iostat分析IO性能</h2>
+
+<p>对于I/O-bond类型的进程，我们经常用iostat工具查看进程IO请求下发的数量、系统处理IO请求的耗时，进而分析进程与操作系统的交互过程中IO方面是否存在瓶颈。</p>
+
+<p>下面通过iostat命令使用实例，说明使用iostat查看IO请求下发情况、系统IO处理能力的方法，以及命令执行结果中各字段的含义。</p>
+
+<h3>1.不加选项执行iostat</h3>
+
+<p>我们先来看直接执行iostat的输出结果：</p>
+
+<pre><code>[root@10.15.107.147 ~]# iostat
+Linux 2.6.18-164.el5 (localhost.localdomain)    05/09/2014      _x86_64_        (8 CPU)
+
+avg-cpu:  %user   %nice %system %iowait  %steal   %idle
+       0.50    0.00    0.46    0.00    0.00   99.04
+
+Device:            tps    kB_read/s    kB_wrtn/s    kB_read    kB_wrtn
+cciss/c0d0        5.31         2.98       101.18    4822763  163804574
+dm-0             25.39         2.98       101.18    4820813  163804504
+dm-1              0.00         0.00         0.00        448          0
+</code></pre>
+
+<p>单独执行iostat，显示的结果为从系统开机到当前执行时刻的统计信息。以上输出中，除最上面指示系统版本、主机名和日期的一行外，另有两部分：</p>
+
+<p>avg-cpu: 总体cpu使用情况统计信息，对于多核cpu，这里为所有cpu的平均值</p>
+
+<p>Device: 各磁盘设备的IO统计信息</p>
+
+<p>对于cpu统计信息一行，我们主要看iowait的值，它指示cpu用于等待io请求完成的时间。Device中各列含义如下：</p>
+
+<ul>
+<li>Device: 以sdX形式显示的设备名称</li>
+<li>tps: 每秒进程下发的IO读、写请求数量</li>
+<li>Blk_read/s: 每秒读扇区数量(一扇区为512bytes)</li>
+<li>Blk_wrtn/s: 每秒写扇区数量</li>
+<li>Blk_read: 取样时间间隔内读扇区总数量</li>
+<li>Blk_wrtn: 取样时间间隔内写扇区总数量</li>
+</ul>
+
+
+<p>我们可以使用-c选项单独显示avg-cpu部分的结果，使用-d选项单独显示Device部分的信息。</p>
+
+<h3>2.指定采样时间间隔与采样次数</h3>
+
+<p>与sar命令一样，我们可以以&#8221;iostat interval [count] ”形式指定iostat命令的采样间隔和采样次数：</p>
+
+<pre><code>[root@10.15.107.147 ~]# iostat -d 1 2
+Linux 2.6.18-164.el5 (localhost.localdomain)    05/09/2014      _x86_64_        (8 CPU)
+
+Device:            tps    kB_read/s    kB_wrtn/s    kB_read    kB_wrtn
+cciss/c0d0        5.31         2.98       101.18    4822763  163821942
+dm-0             25.39         2.98       101.18    4820813  163821872
+dm-1              0.00         0.00         0.00        448          0
+
+Device:            tps    kB_read/s    kB_wrtn/s    kB_read    kB_wrtn
+cciss/c0d0        0.00         0.00         0.00          0          0
+dm-0              0.00         0.00         0.00          0          0
+dm-1              0.00         0.00         0.00          0          0
+</code></pre>
+
+<p>以上命令输出Device的信息，采样时间为1秒，采样2次，若不指定采样次数，则iostat会一直输出采样信息，直到按”ctrl+c”退出命令。注意，第1次采样信息与单独执行iostat的效果一样，为从系统开机到当前执行时刻的统计信息。</p>
+
+<h3>3.以kB为单位显示读写信息(-k选项)</h3>
+
+<p>我们可以使用-k选项，指定iostat的部分输出结果以kB为单位，而不是以扇区数为单位：</p>
+
+<pre><code>[root@10.15.107.147 ~]# iostat -d -k
+Linux 2.6.18-164.el5 (localhost.localdomain)    05/09/2014      _x86_64_        (8 CPU)
+
+Device:            tps    kB_read/s    kB_wrtn/s    kB_read    kB_wrtn
+cciss/c0d0        5.31         2.98       101.18    4822763  163830126
+dm-0             25.39         2.98       101.18    4820813  163830056
+dm-1              0.00         0.00         0.00        448          0
+</code></pre>
+
+<p>以上输出中，kB_read/s、kB_wrtn/s、kB_read和kB_wrtn的值均以kB为单位，相比以扇区数为单位，这里的值为原值的一半(1kB=512bytes*2)</p>
+
+<h3>4.更详细的io统计信息(-x选项)</h3>
+
+<p>为显示更详细的io设备统计信息，我们可以使用-x选项，在分析io瓶颈时，一般都会开启-x选项：</p>
+
+<pre><code>[root@10.15.107.147 ~]# iostat -x -k -d 1
+Linux 2.6.18-164.el5 (localhost.localdomain)    05/09/2014      _x86_64_        (8 CPU)
+
+Device:         rrqm/s   wrqm/s     r/s     w/s    rkB/s    wkB/s avgrq-sz avgqu-sz   await r_await w_await  svctm  %util
+
+......
+
+cciss/c0d0        0.03    20.05    0.07    5.24     2.98   101.18    39.22     0.00    0.38    2.17    0.36   0.10   0.05
+dm-0              0.00     0.00    0.09   25.30     2.98   101.18     8.20     0.02    0.86    2.39    0.86   0.02   0.05
+dm-1              0.00     0.00    0.00    0.00     0.00     0.00     8.00     0.00    3.16    3.16    0.00   0.30   0.00
+</code></pre>
+
+<p>以上各列的含义如下：</p>
+
+<p>rrqm/s: 每秒对该设备的读请求被合并次数，文件系统会对读取同块(block)的请求进行合并</p>
+
+<p>wrqm/s: 每秒对该设备的写请求被合并次数</p>
+
+<p>r/s: 每秒完成的读次数</p>
+
+<p>w/s: 每秒完成的写次数</p>
+
+<p>rkB/s: 每秒读数据量(kB为单位)</p>
+
+<p>wkB/s: 每秒写数据量(kB为单位)</p>
+
+<p>avgrq-sz:平均每次IO操作的数据量(扇区数为单位)</p>
+
+<p>avgqu-sz: 平均等待处理的IO请求队列长度</p>
+
+<p>await: 平均每次IO请求等待时间(包括等待时间和处理时间，毫秒为单位)，这里可以理解为IO的响应时间，一般地<strong>系统IO响应时间应该低于5ms，如果大于10ms就比较大了</strong>。</p>
+
+<p>svctm: 平均每次IO请求的处理时间(毫秒为单位)，<strong>如果 svctm 比较接近 await，说明I/O 几乎没有等待时间；如果 await 远大于 svctm，说明 I/O队列太长，应用得到的响应时间变慢，如果响应时间超过了用户可以容许的范围，这时可以考虑更换更快的磁盘，调整内核 elevator算法，优化应用，或者升级 CPU。</strong></p>
+
+<p>%util: 采用周期内用于IO操作的时间比率，即IO队列非空的时间比率，<strong>该参数暗示了设备的繁忙程度。一般地，如果该参数是100%表示设备已经接近满负荷运行了（当然如果是多磁盘，即使%util是100%，因为磁盘的并发能力，所以磁盘使用未必就到了瓶颈）。</strong></p>
+
+<p>对于以上示例输出，我们可以获取到以下信息：</p>
+
+<p>每秒向磁盘上写101.18KB左右数据(wkB/s值)</p>
+
+<p>每秒有5.31(cciss/c0d0)和25.39(dm-0)次IO操作(r/s+w/s)，其中以写操作为主体</p>
+
+<p>平均每次IO请求等待处理的时间为 0.38、0.86、3.16 毫秒，处理耗时为0.10、0.02 和0.30毫秒</p>
+
+<p>等待处理的IO请求队列中，平均有0.00、0.02、0.00个请求驻留</p>
+
+<p>以上各值之间也存在联系，我们可以由一些值计算出其他数值，例如：</p>
+
+<p>util = (r/s+w/s) * (svctm/1000)</p>
+
+<p>对于上面的例子有：util = (0.07+5.24)*(0.10/1000) = 0.000531</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[性能测试进阶指南——基础篇一（系统资源的讲解）]]></title>
+    <link href="http://365day.github.io/blog/2014/05/09/xing-neng-ce-shi-jin-jie-zhi-nan-ji-chu-pian-%5B%3F%5D-%28xi-tong-zi-yuan-de-jiang-jie-%29/"/>
+    <updated>2014-05-09T09:04:01+08:00</updated>
+    <id>http://365day.github.io/blog/2014/05/09/xing-neng-ce-shi-jin-jie-zhi-nan-ji-chu-pian-[?]-(xi-tong-zi-yuan-de-jiang-jie-)</id>
+    <content type="html"><![CDATA[<p>本文旨在帮助测试人员对性能测试常用指标做一个简单的讲解，主要包括CPU、内存、磁盘和网络带宽等系统资源，本文仅仅局限于Linux系统，Windows Server系统暂不做考虑。</p>
+
+<h2>一、系统资源的分析</h2>
+
+<p>Linux下的系统资源主要记录在内核文件/proc中，下面几乎记录了Linux所有的系统信息。</p>
+
+<h3>1、CPU</h3>
+
+<h4>1.1 CPU的文件系统</h4>
+
+<p>CPU的基本信息在目录cpuinfo下可以查看，基于不同指令集（ISA）的CPU产生的/proc/cpuinfo文件不一样，基于X86指令集CPU的/proc/cpuinfo文件包含如下内容：</p>
+
+<pre><code>[root@alpha8870 proc]# cat cpuinfo
+processor       : 0
+vendor_id       : GenuineIntel
+cpu family      : 6
+model           : 45
+model name      :        Intel(R) Xeon(R) CPU E5-2609 0 @ 2.40GHz
+stepping        : 7
+cpu MHz         : 2400.000
+cache size      : 10240 KB
+physical id     : 0
+siblings        : 4
+core id         : 0
+cpu cores       : 4
+apicid          : 0
+fpu             : yes
+fpu_exception   : yes
+cpuid level     : 13
+wp              : yes
+flags           : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts mmx fxsr sse sse2 ss ht syscall nx rdtscp lm constant_tsc nonstop_tsc pni cx16 popcnt lahf_lm
+bogomips        : 4800.00
+clflush size    : 64
+cache_alignment : 64
+address sizes   : 40 bits physical, 48 bits virtual
+power management: [8]
+</code></pre>
+
+<h5>以上输出项的含义如下：</h5>
+
+<ul>
+<li><strong>processor　：系统中逻辑处理核的编号。对于单核处理器，则可认为是其CPU编号，对于多核处理器则可以是物理核、或者使用超线程技术虚拟的逻辑核 </strong></li>
+<li>vendor_id　：CPU制造商</li>
+<li>cpu family　：CPU产品系列代号</li>
+<li>model　　　：CPU属于其系列中的哪一代的代号</li>
+<li>model name：CPU属于的名字及其编号、标称主频</li>
+<li>stepping　  ：CPU属于制作更新版本</li>
+<li>cpu MHz　  ：CPU的实际使用主频</li>
+<li>cache size   ：CPU二级缓存大小</li>
+<li><strong>physical id   ：单个CPU的标号</strong></li>
+<li>siblings       ：单个CPU逻辑物理核数</li>
+<li>core id        ：当前物理核在其所处CPU中的编号，这个编号不一定连续</li>
+<li><strong>cpu cores    ：该逻辑核所处CPU的物理核数 </strong></li>
+<li>apicid          ：用来区分不同逻辑核的编号，系统中每个逻辑核的此编号必然不同，此编号不一定连续</li>
+<li>fpu             ：是否具有浮点运算单元（Floating Point Unit）</li>
+<li>fpu_exception  ：是否支持浮点计算异常</li>
+<li>cpuid level   ：执行cpuid指令前，eax寄存器中的值，根据不同的值cpuid指令会返回不同的内容</li>
+<li>wp             ：表明当前CPU是否在内核态支持对用户空间的写保护（Write Protection）</li>
+<li>flags          ：当前CPU支持的功能</li>
+<li>bogomips   ：在系统内核启动时粗略测算的CPU速度（Million Instructions Per Second）</li>
+<li>clflush size  ：每次刷新缓存的大小单位</li>
+<li>cache_alignment ：缓存地址对齐单位</li>
+<li>address sizes     ：可访问地址空间位数</li>
+<li>power management ：对能源管理的支持，有以下几个可选支持功能：</li>
+</ul>
+
+
+<p>根据以上内容，我们则可以很方便的知道当前系统关于CPU、CPU的核数、CPU是否启用超线程等信息。</p>
+
+<ul>
+<li><p><strong>查询系统具有多少个逻辑核</strong>：<code>cat /proc/cpuinfo | grep "processor" | wc -l</code></p></li>
+<li><p><strong>查询系统CPU的物理核数</strong>：<code>cat /proc/cpuinfo | grep "cpu cores" | uniq</code></p></li>
+<li><p><strong>查询系统CPU是否启用超线程</strong>：<code>cat /proc/cpuinfo | grep -e "cpu cores"  -e "siblings" | sort | uniq</code></p>
+
+<p> 输出举例： <br/>
+  <code>cpu cores    : 4</code> <br/>
+  <code>siblings      : 4</code></p></li>
+</ul>
+
+
+<p>如果cpu cores数量和siblings数量一致，则没有启用超线程，否则超线程被启用。</p>
+
+<ul>
+<li><strong>查询系统CPU的个数：</strong>cat /proc/cpuinfo | grep &ldquo;physical id&rdquo; | sort | uniq | wc -l</li>
+</ul>
+
+
+<p>查询系统CPU是否支持某项功能，则根以上类似，输出结果进行sort， uniq和grep就可以得到结果。</p>
+
+<h4>1.2 CPU的计算</h4>
+
+<p>a TOP命令</p>
+
+<p><img src="http://365day.github.io/images/top.png"></p>
+
+<p>*第一行：<br/>
+<code>09:27:32 当前系统时间</code><br/>
+<code>18 days, 1:02 系统已经运行了18天1小时2分钟（在这期间没有重启过）</code><br/>
+<code>5 users 当前有5个用户登录系统</code><br/>
+<code>load average: 10.19, 15.27, 18.08 load average后面的三个数分别是1分钟、5分钟、15分钟的负载情况。</code><br/>
+load average数据是每隔5秒钟检查一次活跃的进程数，然后按特定算法计算出的数值。如果这个数除以逻辑CPU的数量，结果高于5的时候就表明系统在超负荷运转了。</p>
+
+<p>*第二行：<br/>
+<code>Tasks 任务（进程），系统现在共有183个进程，其中处于运行中的有1个，182个在休眠（sleep），stoped状态的有0个，zombie状态（僵尸）的有0个。</code></p>
+
+<p>*第三行：cpu状态<br/>
+<code>60.48% us 用户空间占用CPU的百分比。</code><br/>
+<code>13.5% sy 内核空间占用CPU的百分比。</code><br/>
+<code>0.0% ni 改变过优先级的进程占用CPU的百分比</code><br/>
+<code>19.0% id 空闲CPU百分比</code><br/>
+<code>2.5% wa IO等待占用CPU的百分比</code><br/>
+<code>0.3% hi 硬中断（Hardware IRQ）占用CPU的百分比</code><br/>
+<code>4.3% si 软中断（Software Interrupts）占用CPU的百分比</code><br/>
+在这里CPU的使用比率和windows概念不同，如果你不理解用户空间和内核空间，需要充充电了。</p>
+
+<p>*第四行：内存状态<br/>
+<code>48617324k total 物理内存总量（46GB）</code><br/>
+<code>46900564k used 使用中的内存总量（44.7GB）</code><br/>
+<code>1716760k free 空闲内存总量（1.6G）</code><br/>
+<code>2432120k buffers 缓存的内存量 （2.3G）</code></p>
+
+<p>*第五行：swap交换分区
+<code>34996216k total 交换区总量（33GB）</code>
+<code>128k used 使用的交换区总量（128k）</code>
+<code>34996088k free 空闲交换区总量（33GB）</code>
+<code>11883392k cached 缓冲的交换区总量（11GB）</code></p>
+
+<p>这里要说明的是不能用windows的内存概念理解这些数据。Linux的内存管理有其特殊性，复杂点需要一本书来说明，这里只是简单说点和我们传统概念（windows）的不同。</p>
+
+<blockquote><p><strong>第四行中使用中的内存总量（used）指的是现在系统内核控制的内存数，空闲内存总量（free）是内核还未纳入其管控范围的数量。纳入内核管理的内存不见得都在使用中，还包括过去使用过的现在可以被重复利用的内存，内核并不把这些可被重新使用的内存交还到free中去，因此在linux上free内存会越来越少，但不用为此担心。  </strong><br/>
+  <strong>如果出于习惯去计算可用内存数，这里有个近似的计算公式：第四行的free + 第四行的buffers + 第五行的cached，按这个公式此台服务器的可用内存：1716760+2432120+11883392 = 15.3GB。  </strong></p></blockquote>
+
+<p>对于内存监控，在top里我们要时刻监控第五行swap交换分区的used，如果这个数值在不断的变化，说明内核在不断进行内存和swap的数据交换，这是真正的内存不够用了。</p>
+
+<p>*第六行是空行</p>
+
+<p>*第七行以下：各进程（任务）的状态监控<br/>
+* PID 进程id<br/>
+* USER 进程所有者<br/>
+* PR 进程优先级<br/>
+* NI nice值。负值表示高优先级，正值表示低优先级<br/>
+* VIRT 进程使用的虚拟内存总量，单位kb。VIRT=SWAP+RES<br/>
+* RES 进程使用的、未被换出的物理内存大小，单位kb。RES=CODE+DATA<br/>
+* SHR 共享内存大小，单位kb<br/>
+* S 进程状态。D=不可中断的睡眠状态 R=运行 S=睡眠 T=跟踪/停止 Z=僵尸进程<br/>
+* %CPU 上次更新到现在的CPU时间占用百分比<br/>
+* %MEM 进程使用的物理内存百分比<br/>
+* TIME+ 进程使用的CPU时间总计，单位1/100秒<br/>
+* COMMAND 进程名称（命令名/命令行）</p>
+
+<h6>多U多核CPU监控</h6>
+
+<p>在top基本视图中，按键盘数字1，可监控每个逻辑CPU的状况：</p>
+
+<p><img src="http://365day.github.io/images/top1.png"></p>
+
+<p>观察上图，服务器有8个逻辑CPU，实际上是2个物理CPU。</p>
+
+<h6>进程字段排序</h6>
+
+<p>默认进入top时，各进程是按照CPU的占用量来排序的，在上图中进程ID为14613的java进程排在第一（cpu占用390.7%），进程ID为27924的java进程排在第二（cpu占用7.0%）。可通过键盘指令来改变排序字段，比如想监控哪个进程占用MEM最多，我一般的使用方法如下：</p>
+
+<p><strong>1. 敲击键盘b（打开/关闭加亮效果），top的视图变化如下：</strong></p>
+
+<p><img src="http://365day.github.io/images/top2.png"></p>
+
+<p>我们发现进程id为16899的top进程被加亮了，top进程就是视图第二行显示的唯一的运行态（runing）的那个进程，可以通过敲击y键关闭或打开运行态进程的加亮效果。</p>
+
+<p><img src="http://365day.github.io/images/top3.png"></p>
+
+<p>可以看到，top默认的排序列是%CPU。</p>
+
+<p><img src="http://365day.github.io/images/top4.png"></p>
+
+<p><strong>通过shift + >或shift + &lt;可以向右或左改变排序列，下图是按一次shift + >的效果图：</strong></p>
+
+<p><img src="http://365day.github.io/images/top5.png"></p>
+
+<p>视图现在已经按照%MEM来排序了。</p>
+
+<h6>改变进程显示字段</h6>
+
+<p><strong>1. 敲击f键，top进入另一个视图，在这里可以编排基本视图中的显示字段：</strong></p>
+
+<p><img src="http://365day.github.io/images/top6.png"></p>
+
+<p>这里列出了所有可在top基本视图中显示的进程字段，有*并且标注为大写字母的字段是可显示的，没有*并且是小写字母的字段是不显示的。如果要在基本视图中显示CODE和DATA两个字段，可以通过敲击r和s键：</p>
+
+<p><img src="http://365day.github.io/images/top7.png"></p>
+
+<p><strong>回车返回基本视图，可以看到多了CODE和DATA两个字段：</strong></p>
+
+<p><img src="http://365day.github.io/images/top8.png"></p>
+
+<p>top命令的补充</p>
+
+<p>top命令是Linux上进行系统监控的首选命令，但有时候却达不到我们的要求，比如当前这台服务器，top监控有很大的局限性。top命令的监控最小单位是进程，所以看不到关心的java线程数和客户连接数，而这两个指标是java的web服务非常重要的指标，通常用ps和netstate两个命令来补充top的不足。</p>
+
+<p><strong>监控java线程数：</strong><br/>
+<code>ps -eLf | grep java | wc -l </code></p>
+
+<p><strong>监控网络客户连接数：</strong><br/>
+<code>netstat -n | grep tcp | grep 侦听端口 | wc -l</code></p>
+
+<p>上面两个命令，可改动grep的参数，来达到更细致的监控要求。</p>
+
+<p>在Linux系统一切都是文件的思想贯彻指导下，所有进程的运行状态都可以用文件来获取。系统根目录/proc中，每一个数字子目录的名字都是运行中的进程的PID，进入任一个进程目录，可通过其中文件或目录来观察进程的各项运行指标，例如task目录就是用来描述进程中线程的，因此也可以通过下面的方法获取某进程中运行中的线程数量（PID指的是进程ID）：<br/>
+<code>ls /proc/PID/task | wc -l </code></p>
+
+<p>在linux中还有一个命令pmap，来输出进程内存的状况，可以用来分析线程堆栈：<br/>
+<code>pmap PID</code></p>
+
+<h5>b CPU使用率的计算</h5>
+
+<p><strong>/proc/stat文件</strong></p>
+
+<p>该文件包含了所有CPU活动的信息，该文件中的所有值都是从系统启动开始累计到当前时刻。不同内核版本中该文件的格式可能不大一致，以下通过实例来说明数据该文件中各字段的含义。实例数据：2.6.18-164.el5版本上的</p>
+
+<pre><code>cpu  354452949 16260 60331937 380649864 4361825 1248983 9367391 0
+cpu0 38204143 1070 7122259 53682412 638525 46222 141618 0
+cpu1 42667515 2209 7720403 48255130 605091 0 106222 0
+cpu2 46253571 1199 8501463 43893118 588902 19 106925 0
+cpu3 47755506 935 8960373 41907018 579979 734 109005 0
+cpu4 37011661 2915 7258339 51363615 472962 327902 5318893 0
+cpu5 46282988 3828 7216415 49389385 597243 0 126783 0
+cpu6 49721915 2594 7962514 45251453 559504 167 128630 0
+cpu7 46555646 1506 5590168 46907728 319617 873936 3329313 0
+intr 2347835587 1023833604 9 0 3 3 0 5 0 1 0 0 0 115 0 13945415 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 142398948 0 0 0 0 0 0 0 1167657484 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+ctxt 5406149033
+btime 1398039911
+processes 2852119
+procs_running 5
+procs_blocked 0
+</code></pre>
+
+<p>第一行的数值表示的是CPU总的使用情况，所以我们只要用第一行的数字计算就可以了。下表解析第一行各数值的含义：</p>
+
+<p>参数          解析（单位：jiffies）</p>
+
+<blockquote><p>(jiffies是内核中的一个全局变量，用来记录自系统启动一来产生的节拍数，在linux中，一个节拍大致可理解为操作系统进程调度的最小时间片，不同linux内核可能值有不同，通常在1ms到10ms之间)</p></blockquote>
+
+<ul>
+<li><p>user (354452949)    从系统启动开始累计到当前时刻，处于用户态的运行时间，不包含 nice值为负进程。</p></li>
+<li><p>nice (16260)      从系统启动开始累计到当前时刻，nice值为负的进程所占用的CPU时间</p></li>
+<li><p>system (60331937)  从系统启动开始累计到当前时刻，处于核心态的运行时间</p></li>
+<li><p>idle (380649864)   从系统启动开始累计到当前时刻，除IO等待时间以外的其它等待时间iowait (12256) 从系统启动开始累计到当前时刻，IO等待时间(since 2.5.41)</p></li>
+<li><p>irq (4361825)           从系统启动开始累计到当前时刻，硬中断时间(since 2.6.0-test4)</p></li>
+<li><p>softirq (1248983)      从系统启动开始累计到当前时刻，软中断时间(since 2.6.0-test4)stealstolen(0)                   which is the time spent in other operating systems when running in a virtualized environment(since 2.6.11)</p></li>
+<li><p>guest(9367391)         which is the time spent running a virtual  CPU  for  guest operating systems under the control of the Linux kernel(since 2.6.24)</p></li>
+</ul>
+
+
+<p><strong>结论1：总的cpu时间totalCpuTime = user + nice + system + idle + iowait + irq + softirq + stealstolen  +  guest</strong></p>
+
+<p><strong>/proc/&lt;pid>/stat文件</strong></p>
+
+<p>该文件包含了某一进程所有的活动的信息，该文件中的所有值都是从系统启动开始累计到当前时刻。以下通过实例数据来说明该文件中各字段的含义。</p>
+
+<pre><code>[root@alpha8870 lib]# cat /proc/20738/stat
+20738 (java) S 1 20730 20615 34827 20615 4202496 13527950 0 2442 0 2593008 426148 0 0 22 0 1405 0 156378640 60392562688 6497342 18446744073709551615 4194304 4196484 140737061833664 18446744073709551615 243481475045 0 0 2 16800973 18446744073709551615 0 0 17 5 0 0 0
+</code></pre>
+
+<p>说明：以下只解释对我们计算Cpu使用率有用相关参数</p>
+
+<p>参数                                                                解释</p>
+
+<p>1——pid=20738                            进程号</p>
+
+<p>2——comm=(java)                  应用程序或命令的名字</p>
+
+<p>3——task_state=S                 任务的状态：R is running, S is sleeping, D is sleeping in an uninterruptible wait, Z is zombie, T is traced or stopped</p>
+
+<p>4——ppid=1                       父进程ID</p>
+
+<p>5——pgid=20730                   线程组号</p>
+
+<p>6——sid=20615                    该任务所在的会话组ID</p>
+
+<p>7——tty_nr=34827                 该任务的tty终端的设备号，INT（34817/256）=主设备号，（34817-主设备号）=次设备号</p>
+
+<p>8——tty_pgrp=20615               终端的进程组号，当前运行在该任务所在终端的前台任务(包括shell 应用程序)的PID。</p>
+
+<p>9——task->flags=4202496          进程标志位，查看该任务的特性</p>
+
+<p>10——min_flt=13527950                该任务不需要从硬盘拷数据而发生的缺页（次缺页）的次数</p>
+
+<p>11——cmin_flt=0                  累计的该任务的所有的waited-for进程曾经发生的次缺页的次数目</p>
+
+<p>12——maj_flt=2442                    该任务需要从硬盘拷数据而发生的缺页（主缺页）的次数</p>
+
+<p>13——cmaj_flt=0                  累计的该任务的所有的waited-for进程曾经发生的主缺页的次数目</p>
+
+<p><strong>14——utime=2593008             该任务在用户态运行的时间，单位为jiffies</strong></p>
+
+<p><strong>15——stime=426148                  该任务在核心态运行的时间，单位为jiffies</strong></p>
+
+<p><strong>16——cutime=0                      累计的该任务的所有的waited-for进程曾经在用户态运行的时间，单位为jiffies</strong></p>
+
+<p><strong>17——cstime=0                      累计的该任务的所有的waited-for进程曾经在核心态运行的时间，单位为jiffies</strong></p>
+
+<p>18——priority=22                 任务的动态优先级</p>
+
+<p>19——nice=0                      任务的静态优先级</p>
+
+<p>20——num_threads=1405                该任务所在的线程组里线程的个数</p>
+
+<p>21——it_real_value=0 由于计时间隔导致的下一个 SIGALRM 发送进程的时延，以 jiffy 为单位.</p>
+
+<p>22——start_time=5882654 该任务启动的时间，单位为jiffies</p>
+
+<p>23——vsize=1409024（page） 该任务的虚拟地址空间大小</p>
+
+<p>24——rss=56(page) 该任务当前驻留物理地址空间的大小。Number of pages the process has in real memory,minu 3 for administrative purpose.这些页可能用于代码，数据和栈。</p>
+
+<p>25——rlim=4294967295（bytes） 该任务能驻留物理地址空间的最大值</p>
+
+<p>26——start_code=134512640 该任务在虚拟地址空间的代码段的起始地址</p>
+
+<p>27——end_code=134513720 该任务在虚拟地址空间的代码段的结束地址</p>
+
+<p>28——start_stack=3215579040 该任务在虚拟地址空间的栈的结束地址</p>
+
+<p>29——kstkesp=0 esp(32 位堆栈指针) 的当前值, 与在进程的内核堆栈页得到的一致.</p>
+
+<p>30——kstkeip=2097798 指向将要执行的指令的指针, EIP(32 位指令指针)的当前值.</p>
+
+<p>31——pendingsig=0 待处理信号的位图，记录发送给进程的普通信号</p>
+
+<p>32——block_sig=0 阻塞信号的位图</p>
+
+<p>33——sigign=0 忽略的信号的位图</p>
+
+<p>34——sigcatch=082985 被俘获的信号的位图</p>
+
+<p>35——wchan=0 如果该进程是睡眠状态，该值给出调度的调用点</p>
+
+<p>nswap 被swapped的页数，当前没用</p>
+
+<p>cnswap 所有子进程被swapped的页数的和，当前没用</p>
+
+<p>exit_signal=17 该进程结束时，向父进程所发送的信号</p>
+
+<p>task_cpu(task)=0 运行在哪个CPU上</p>
+
+<p>task_rt_priority=0 实时进程的相对优先级别</p>
+
+<p>task_policy=0 进程的调度策略，0=非实时进程，1=FIFO实时进程；2=RR实时进程</p>
+
+<p><strong>结论2：进程的总Cpu时间processCpuTime = utime + stime + cutime + cstime，该值包括其所有线程的cpu时间。</strong></p>
+
+<h5>单核情况下Cpu使用率的计算</h5>
+
+<h6>基本思想</h6>
+
+<p>通过读取/proc/stat 、/proc/<pid>/stat以及/proc/cpuinfo这几个文件获取总的Cpu时间、进程的Cpu时间以及Cpu的个数的信息，然后通过一定的算法进行计算(采样两个足够短的时间间隔的Cpu快照与进程快照来计算进程的Cpu使用率)。</p>
+
+<p><strong>总的Cpu使用率计算</strong></p>
+
+<p>计算方法：</p>
+
+<p>1、 采样两个足够短的时间间隔的Cpu快照，分别记作t1,t2，其中t1、t2的结构均为：
+(user、nice、system、idle、iowait、irq、softirq、stealstolen、guest)的9元组;</p>
+
+<p>2、  计算总的Cpu时间片totalCpuTime</p>
+
+<p>a)     把第一次的所有cpu使用情况求和，得到s1;</p>
+
+<p>b)     把第二次的所有cpu使用情况求和，得到s2;</p>
+
+<p>c)     s2 &ndash; s1得到这个时间间隔内的所有时间片，即totalCpuTime = j2 &ndash; j1 ;</p>
+
+<p>3、计算空闲时间idle</p>
+
+<p>idle对应第四列的数据，用第二次的第四列-第一次的第四列即可</p>
+
+<p>idle=第二次的第四列-第一次的第四列</p>
+
+<p>6、计算cpu使用率</p>
+
+<p>pcpu =100* (total-idle)/total</p>
+
+<p><strong>某一进程Cpu使用率的计算</strong></p>
+
+<p>计算方法：</p>
+
+<p>1． 采样两个足够短的时间间隔的cpu快照与进程快照，</p>
+
+<p>a)  每一个cpu快照均为(user、nice、system、idle、iowait、irq、softirq、stealstolen、guest)的9元组;</p>
+
+<p>b)  每一个进程快照均为 (utime、stime、cutime、cstime)的4元组；</p>
+
+<p>2．分别根据结论1、结论2计算出两个时刻的总的cpu时间与进程的cpu时间，分别记作：totalCpuTime1、totalCpuTime2、processCpuTime1、processCpuTime2</p>
+
+<p>3．计算该进程的cpu使用率pcpu = 100*( processCpuTime2 – processCpuTime1) / (totalCpuTime2 – totalCpuTime1) (按100%计算，如果是多核情况下还需乘以cpu的个数);</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Mac OS X下编译jzmq]]></title>
+    <link href="http://365day.github.io/blog/2014/05/08/mac-os-xxia-bian-yi-jzmq/"/>
+    <updated>2014-05-08T18:48:58+08:00</updated>
+    <id>http://365day.github.io/blog/2014/05/08/mac-os-xxia-bian-yi-jzmq</id>
+    <content type="html"><![CDATA[<p>本文旨在帮助Mac OS X下的用户编译jzmq，本文出现的诸多问题也仅仅局限于MAC OS X，在RedHat、CentOS等系统环境下的用户未必会出现此类问题。</p>
+
+<p>jzmq是为Java语言提供的一个可以与ZeroMQ进行通信的链接库。</p>
+
+<p>安装jzmq之前请确认已经部署有JVM环境。</p>
+
+<p>在MAC OS X下编译jzmq首先需要autotools，autotools环境需要三个lib：autoconf、automake和libtool。</p>
+
+<h6>一、部署autotools环境：</h6>
+
+<p>1、为autotools创建安装目录：本文部署在/usr/local/devtools（可自定义）目录下，最好在环境变量下配置一下该路径，~/.bash_profile，</p>
+
+<p><code>export build=/usr/local/devtools</code></p>
+
+<p>使环境变量生效</p>
+
+<p><code>source ~/.bash_profile</code></p>
+
+<p>2、安装部署autoconf</p>
+
+<p>在<a href="http://mirrors.ustc.edu.cn/gnu/autoconf/">http://mirrors.ustc.edu.cn/gnu/autoconf/</a>目录下下载最新的autoconf，最新版本的命名为autoconf-latest.tar.gz</p>
+
+<p>将autoconf-latest.tar.gz拷贝至$build目录下，解压缩</p>
+
+<blockquote><p>cd $build</p>
+
+<p>tar zxvf autoconf-latest.tar.gz</p>
+
+<p>cd autoconf-latest</p>
+
+<p>./configure &mdash;prefix=$build/autotools-bin</p>
+
+<p>make</p>
+
+<p>make install</p></blockquote>
+
+<p>在~/.bash_profile下添加PATH环境变量</p>
+
+<p><code>export PATH=$PATH:$build/autotools-bin/bin</code></p>
+
+<p>3、安装部署automake</p>
+
+<p>在<a href="http://mirror.bjtu.edu.cn/gnu/automake/">http://mirror.bjtu.edu.cn/gnu/automake/</a>目录下下载最新的automake，最新版本的命名为automake-1.14.tar.gz</p>
+
+<p>将automake-1.14.tar.gz拷贝至$build目录下，解压缩</p>
+
+<blockquote><p>cd $$build</p>
+
+<p>tar zxvf automake-1.14.tar.gz</p>
+
+<p>cd automake-1.14</p>
+
+<p>./configure &mdash;prefix=$build/autotools-bin</p>
+
+<p>make</p>
+
+<p>make install</p></blockquote>
+
+<p>4、安装部署libtool</p>
+
+<p>在<a href="http://mirror.bjtu.edu.cn/gnu/libtool/">http://mirror.bjtu.edu.cn/gnu/libtool/</a>目录下下载最新的libtool，最新版本的命名为libtool-2.4.2.tar.gz</p>
+
+<p>将libtool-2.4.2.tar.gz拷贝至$build目录下，解压缩</p>
+
+<blockquote><p>cd $$build</p>
+
+<p>tar zxvf libtool-2.4.2.tar.gz</p>
+
+<p>cd libtool-2.4.2</p>
+
+<p>./configure &mdash;prefix=$build/autotools-bin</p>
+
+<p>make</p>
+
+<p>make install</p></blockquote>
+
+<h6>二、部署pkg-config</h6>
+
+<p>部署pkg-config可以借助于brew，brew是mac下一个类似于yum,apt-get等之类的工具，如果机器上没有这个命令的，请自行google。</p>
+
+<p><code>brew install pkg-config</code></p>
+
+<p>执行该命令之后pkg-config就自行安装好了，brew默认安装的路径为/usr/local/homebrew/Cellar（此路径根据你在安装brew定义的时候定义的）。</p>
+
+<p>三、部署zeromq</p>
+
+<p>到<a href="http://download.zeromq.org/">http://download.zeromq.org/</a>目录下下载zeromq，建议下载2.2.0版本，下载之后拷贝至/usr/local目录下并进行解压缩</p>
+
+<blockquote><p>tar zxvf zeromq-2.2.0.tar.gz</p>
+
+<p>cd zeromq-2.2.0</p>
+
+<p>./configure &mdash;with-pgm</p>
+
+<p>make</p>
+
+<p>make install</p></blockquote>
+
+<p>四、下载安装jzmq</p>
+
+<p>到<a href="https://github.com/zeromq/jzmq">https://github.com/zeromq/jzmq</a>目录下git出jzmq，然后进入该目录执行如下命令：</p>
+
+<p><code>./autogen.sh</code></p>
+
+<p><code>./configure</code></p>
+
+<p>在执行configure时可能会出现如下问题：</p>
+
+<blockquote><p>autoreconf: Entering directory `.&lsquo;
+autoreconf: configure.in: not using Gettext
+autoreconf: running: aclocal -I config &mdash;force -I config
+aclocal: warning: autoconf input should be named &#8216;configure.ac&rsquo;, not &lsquo;configure.in&rsquo;
+autoreconf: configure.in: tracing
+autoreconf: configure.in: not using Libtool
+autoreconf: running: /usr/local/homebrew/Cellar/autoconf/2.69/bin/autoconf &mdash;include=config &mdash;force
+configure.in:28: error: possibly undefined macro: AC_PROG_LIBTOOL</p>
+
+<pre><code>  If this token and others are legitimate, please use m4_pattern_allow.
+  See the Autoconf documentation.
+</code></pre>
+
+<p>autoreconf: /usr/local/homebrew/Cellar/autoconf/2.69/bin/autoconf failed with exit status: 1
+autogen.sh: error: autoreconf exited with status 0</p></blockquote>
+
+<p>解决方法如下：（以下命令参考于<a href="http://stackoverflow.com/questions/3522248/how-do-i-compile-jzmq-for-zeromq-on-osx">http://stackoverflow.com/questions/3522248/how-do-i-compile-jzmq-for-zeromq-on-osx</a>）：</p>
+
+<p>在控制台下执行如下两行命令：</p>
+
+<blockquote><p>eval `brew &mdash;config | grep HOMEBREW_PREFIX | sed &rsquo;s/: /=/&lsquo;`</p>
+
+<p>sudo bash -c &lsquo;echo &rsquo;$HOMEBREW_PREFIX/share/aclocal&#8217; >> `aclocal &mdash;print-ac-dir`/dirlist&#8217;</p></blockquote>
+
+<p>执行上述命令如果出现如下问题：</p>
+
+<blockquote><p>bash: aclocal: command not found</p></blockquote>
+
+<p>请加入aclocal的全路径：</p>
+
+<blockquote><p>sudo bash -c &lsquo;echo &rsquo;$HOMEBREW_PREFIX/share/aclocal&#8217; >> `/usr/local/devtools/autotools-bin/bin/aclocal &mdash;print-ac-dir`/dirlist&#8217;</p></blockquote>
+
+<p>configure命令执行通过之后，执行</p>
+
+<p><code>make</code></p>
+
+<p><code>sudo make install</code></p>
+
+<p>最后会在/usr/local/share/java/目录下生成zmq.jar包，在/usr/local/lib目录下生成native lib.</p>
+
+<p>在部署过程中，可能还会出现其它问题，一般这些问题均是由缺少某个库引起的，安装相应的库便可解决这些问题。</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[用Octopress写博客（常用命令）]]></title>
+    <link href="http://365day.github.io/blog/2014/05/08/yong-octopressxie-bo-ke-%28chang-yong-ming-ling-%29/"/>
+    <updated>2014-05-08T14:38:29+08:00</updated>
+    <id>http://365day.github.io/blog/2014/05/08/yong-octopressxie-bo-ke-(chang-yong-ming-ling-)</id>
+    <content type="html"><![CDATA[<h3>用Octopress经常需要用到如下命令：</h3>
+
+<ul>
+<li><p>rake new_post[’article name‘] 生成博文框架，然后修改生成的文件即可</p></li>
+<li><p>rake generate 生成静态文件</p></li>
+<li><p>rake watch 检测文件变化，实时生成新内容</p></li>
+<li><p>rake preview 在本机4000端口生成访问内容</p></li>
+<li><p>rake deploy 发布文件</p></li>
+</ul>
+
+
+<blockquote><p>其它命令详见官网：<a href="http://octopress.org/docs/blogging/">Blogging Basics</a></p></blockquote>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Self-Introduction]]></title>
+    <link href="http://365day.github.io/blog/2014/05/07/self-introduction/"/>
+    <updated>2014-05-07T22:56:27+08:00</updated>
+    <id>http://365day.github.io/blog/2014/05/07/self-introduction</id>
+    <content type="html"><![CDATA[<h3># EDUCATION EXPERIENCE：</h3>
+
+<ul>
+<li><h5>###### Bachelor：Nanjing University of Information Science &amp; Technology</h5></li>
+<li><h5>###### Master：China University of Petroleum</h5></li>
+</ul>
+
+
+<h3># WORK EXPERIENCE：</h3>
+
+<ul>
+<li><h5>###### 丁丁网 （2012.06~2012.11）</h5></li>
+<li><h5>###### 大智慧 （2013.03~至今）</h5></li>
+</ul>
+
+
+<h3>#### 常用博客地址：</h3>
+
+<ul>
+<li><h5>###### CSDN：<a href="http://blog.csdn.net/gao715108023">http://blog.csdn.net/gao715108023</a></h5></li>
+<li><h5>###### GitHub：<a href="https://github.com/gao715108023">https://github.com/gao715108023</a></h5></li>
+<li><h5>###### 知乎ID：alfred nuist</h5></li>
+<li><h5>###### 果壳网：三俗人</h5></li>
+<li><h5>###### 摄影新手Instagram账户：gao715108023</h5>
+
+<p><strong><em> Email：alfred0918@163.com</em></strong></p></li>
+</ul>
+
+]]></content>
+  </entry>
+  
+</feed>
