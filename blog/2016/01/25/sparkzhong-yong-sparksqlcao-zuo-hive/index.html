@@ -5,14 +5,11 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>用Octopress写博客（常用命令） - Alfred's Blog</title>
+  <title>spark中用SparkSql操作Hive - Alfred's Blog</title>
   <meta name="author" content="GaoChuanjun">
 
   
-  <meta name="description" content="用Octopress经常需要用到如下命令： rake new_post[’article name‘] 生成博文框架，然后修改生成的文件即可
-rake generate 生成静态文件
-rake watch 检测文件变化，实时生成新内容
-rake preview 在本机4000端口生成访问内容 &hellip;">
+  <meta name="description" content="Spark中操作hive，需要借助SaprkSQL工具包。SparkSQL中集成了对JSON串，hive，hdfs以及关系型数据库MySQL等的操作。SparkSQL的数据结构是高度自定义的DataFrame，DataFrame实现了结构化数据源与RDD之间的便利操作。 hive从0. &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -21,7 +18,7 @@ rake preview 在本机4000端口生成访问内容 &hellip;">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   
-  <link rel="canonical" href="http://365day.github.io/blog/2014/05/08/yong-octopressxie-bo-ke-%28chang-yong-ming-ling-%29">
+  <link rel="canonical" href="http://365day.github.io/blog/2016/01/25/sparkzhong-yong-sparksqlcao-zuo-hive">
   <link href="/favicon.png" rel="icon">
   <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
   <link href="/atom.xml" rel="alternate" title="Alfred's Blog" type="application/atom+xml">
@@ -71,7 +68,7 @@ rake preview 在本机4000端口生成访问内容 &hellip;">
   
   <header>
     
-      <h1 class="entry-title">用Octopress写博客（常用命令）</h1>
+      <h1 class="entry-title">spark中用SparkSql操作Hive</h1>
     
     
       <p class="meta">
@@ -87,25 +84,97 @@ rake preview 在本机4000端口生成访问内容 &hellip;">
   
 
 
-<time datetime="2014-05-08T14:38:29+08:00" pubdate data-updated="true">May 8<span>th</span>, 2014</time>
+<time datetime="2016-01-25T17:03:07+08:00" pubdate data-updated="true">Jan 25<span>th</span>, 2016</time>
         
       </p>
     
   </header>
 
 
-<div class="entry-content"><h3>用Octopress经常需要用到如下命令：</h3>
+<div class="entry-content"><p><a href="http://spark.apache.org/">Spark</a>中操作<a href="https://hive.apache.org/">hive</a>，需要借助SaprkSQL工具包。SparkSQL中集成了对JSON串，hive，hdfs以及关系型数据库MySQL等的操作。SparkSQL的数据结构是高度自定义的DataFrame，DataFrame实现了结构化数据源与RDD之间的便利操作。</p>
 
-<ul>
-<li><p>rake new_post[’article name‘] 生成博文框架，然后修改生成的文件即可</p></li>
-<li><p>rake generate 生成静态文件</p></li>
-<li><p>rake watch 检测文件变化，实时生成新内容</p></li>
-<li><p>rake preview 在本机4000端口生成访问内容</p></li>
-<li><p>rake deploy 发布文件</p></li>
-</ul>
+<p>hive从0.14版本开始支持Insert语句(只支持ACID特性的表)，在更早的版本，Hive几乎只支持Load操作（从本地或者hdfs），参考链接：<a href="https://cwiki.apache.org/confluence/display/Hive/LanguageManual+DML#LanguageManualDML-InsertingvaluesintotablesfromSQL">https://cwiki.apache.org/confluence/display/Hive/LanguageManual+DML#LanguageManualDML-InsertingvaluesintotablesfromSQL</a></p>
+
+<pre><code>Standard Syntax:
+INSERT INTO TABLE tablename [PARTITION (partcol1[=val1], partcol2[=val2] ...)] VALUES values_row [, values_row ...]
+
+Where values_row is:
+( value [, value ...] )
+where a value is either null or any valid SQL literal
+</code></pre>
+
+<p>Examples</p>
+
+<pre><code>CREATE TABLE students (name VARCHAR(64), age INT, gpa DECIMAL(3, 2)) CLUSTERED BY (age) INTO 2 BUCKETS STORED AS ORC;
+
+INSERT INTO TABLE students VALUES ('fred flintstone', 35, 1.28), ('barney rubble', 32, 2.32);
 
 
-<blockquote><p>其它命令详见官网：<a href="http://octopress.org/docs/blogging/">Blogging Basics</a></p></blockquote>
+CREATE TABLE pageviews (userid VARCHAR(64), link STRING, came_from STRING) PARTITIONED BY (datestamp STRING) CLUSTERED BY (userid) INTO 256 BUCKETS STORED AS ORC;
+
+INSERT INTO TABLE pageviews PARTITION (datestamp = '2014-09-23') VALUES ('jsmith', 'mail.com', 'sports.com'), ('jdoe', 'mail.com', null);
+
+INSERT INTO TABLE pageviews PARTITION (datestamp) VALUES ('tjohnson', 'sports.com', 'finance.com', '2014-09-23'), ('tlee', 'finance.com', null, '2014-09-21');
+</code></pre>
+
+<p>用SparkSQL向hive中插入数据，需要将数据转换成DataFrame数据结构，DataFrame提供了简便的insert操作。</p>
+
+<p>DataFrame支持由RDD创建，参考链接：<a href="http://spark.apache.org/docs/latest/sql-programming-guide.html#creating-dataframes">http://spark.apache.org/docs/latest/sql-programming-guide.html#creating-dataframes</a>：</p>
+
+<pre><code>public static class Person implements Serializable {
+private String name;
+private int age;
+public String getName() {
+return name;
+}
+public void setName(String name) {
+this.name = name;
+}
+public int getAge() {
+return age;
+}
+public void setAge(int age) {
+this.age = age;
+}
+}
+
+// sc is an existing JavaSparkContext.
+SQLContext sqlContext = new org.apache.spark.sql.SQLContext(sc);
+
+// Load a text file and convert each line to a JavaBean.
+JavaRDD&lt;Person&gt; people = sc.textFile("examples/src/main/resources/people.txt").map(
+new Function&lt;String, Person&gt;() {
+public Person call(String line) throws Exception {
+  String[] parts = line.split(",");
+
+  Person person = new Person();
+  person.setName(parts[0]);
+  person.setAge(Integer.parseInt(parts[1].trim()));
+
+  return person;
+}
+});
+
+// Apply a schema to an RDD of JavaBeans and register it as a table.
+DataFrame schemaPeople = sqlContext.createDataFrame(people, Person.class);
+schemaPeople.registerTempTable("people");
+
+// SQL can be run over RDDs that have been registered as tables.
+DataFrame teenagers = sqlContext.sql("SELECT name FROM people WHERE age &gt;= 13 AND age &lt;= 19")
+
+// The results of SQL queries are DataFrames and support all the normal RDD operations.
+// The columns of a row in the result can be accessed by ordinal.
+List&lt;String&gt; teenagerNames = teenagers.javaRDD().map(new Function&lt;Row, String&gt;() {
+public String call(Row row) {
+return "Name: " + row.getString(0);
+}
+}).collect();
+</code></pre>
+
+<p>将数据插入hive：</p>
+
+<pre><code>schemaPeople.insertInto("person")
+</code></pre>
 </div>
 
 
@@ -128,14 +197,8 @@ rake preview 在本机4000端口生成访问内容 &hellip;">
   
 
 
-<time datetime="2014-05-08T14:38:29+08:00" pubdate data-updated="true">May 8<span>th</span>, 2014</time>
+<time datetime="2016-01-25T17:03:07+08:00" pubdate data-updated="true">Jan 25<span>th</span>, 2016</time>
       
-
-<span class="categories">
-  
-    <a class='category' href='/blog/categories/octopress/'>Octopress</a>
-  
-</span>
 
 
     </p>
@@ -149,10 +212,8 @@ rake preview 在本机4000端口生成访问内容 &hellip;">
     
     <p class="meta">
       
-        <a class="basic-alignment left" href="/blog/2014/05/07/self-introduction/" title="Previous Post: Self-Introduction">&laquo; Self-Introduction</a>
+        <a class="basic-alignment left" href="/blog/2014/07/03/stormde-tuo-bu-jobde-dong-tai-diao-du-you-hua/" title="Previous Post: storm的拓扑Job的动态调度优化">&laquo; storm的拓扑Job的动态调度优化</a>
       
-      
-        <a class="basic-alignment right" href="/blog/2014/05/08/mac-os-xxia-bian-yi-jzmq/" title="Next Post: Mac OS X下编译jzmq">Mac OS X下编译jzmq &raquo;</a>
       
     </p>
   </footer>

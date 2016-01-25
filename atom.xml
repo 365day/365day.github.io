@@ -4,7 +4,7 @@
   <title><![CDATA[Alfred's Blog]]></title>
   <link href="http://365day.github.io/atom.xml" rel="self"/>
   <link href="http://365day.github.io/"/>
-  <updated>2016-01-25T00:35:26+08:00</updated>
+  <updated>2016-01-25T17:33:46+08:00</updated>
   <id>http://365day.github.io/</id>
   <author>
     <name><![CDATA[GaoChuanjun]]></name>
@@ -12,6 +12,98 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[spark中用SparkSql操作Hive]]></title>
+    <link href="http://365day.github.io/blog/2016/01/25/sparkzhong-yong-sparksqlcao-zuo-hive/"/>
+    <updated>2016-01-25T17:03:07+08:00</updated>
+    <id>http://365day.github.io/blog/2016/01/25/sparkzhong-yong-sparksqlcao-zuo-hive</id>
+    <content type="html"><![CDATA[<p><a href="http://spark.apache.org/">Spark</a>中操作<a href="https://hive.apache.org/">hive</a>，需要借助SaprkSQL工具包。SparkSQL中集成了对JSON串，hive，hdfs以及关系型数据库MySQL等的操作。SparkSQL的数据结构是高度自定义的DataFrame，DataFrame实现了结构化数据源与RDD之间的便利操作。</p>
+
+<p>hive从0.14版本开始支持Insert语句(只支持ACID特性的表)，在更早的版本，Hive几乎只支持Load操作（从本地或者hdfs），参考链接：<a href="https://cwiki.apache.org/confluence/display/Hive/LanguageManual+DML#LanguageManualDML-InsertingvaluesintotablesfromSQL">https://cwiki.apache.org/confluence/display/Hive/LanguageManual+DML#LanguageManualDML-InsertingvaluesintotablesfromSQL</a></p>
+
+<pre><code>Standard Syntax:
+INSERT INTO TABLE tablename [PARTITION (partcol1[=val1], partcol2[=val2] ...)] VALUES values_row [, values_row ...]
+
+Where values_row is:
+( value [, value ...] )
+where a value is either null or any valid SQL literal
+</code></pre>
+
+<p>Examples</p>
+
+<pre><code>CREATE TABLE students (name VARCHAR(64), age INT, gpa DECIMAL(3, 2)) CLUSTERED BY (age) INTO 2 BUCKETS STORED AS ORC;
+
+INSERT INTO TABLE students VALUES ('fred flintstone', 35, 1.28), ('barney rubble', 32, 2.32);
+
+
+CREATE TABLE pageviews (userid VARCHAR(64), link STRING, came_from STRING) PARTITIONED BY (datestamp STRING) CLUSTERED BY (userid) INTO 256 BUCKETS STORED AS ORC;
+
+INSERT INTO TABLE pageviews PARTITION (datestamp = '2014-09-23') VALUES ('jsmith', 'mail.com', 'sports.com'), ('jdoe', 'mail.com', null);
+
+INSERT INTO TABLE pageviews PARTITION (datestamp) VALUES ('tjohnson', 'sports.com', 'finance.com', '2014-09-23'), ('tlee', 'finance.com', null, '2014-09-21');
+</code></pre>
+
+<p>用SparkSQL向hive中插入数据，需要将数据转换成DataFrame数据结构，DataFrame提供了简便的insert操作。</p>
+
+<p>DataFrame支持由RDD创建，参考链接：<a href="http://spark.apache.org/docs/latest/sql-programming-guide.html#creating-dataframes">http://spark.apache.org/docs/latest/sql-programming-guide.html#creating-dataframes</a>：</p>
+
+<pre><code>public static class Person implements Serializable {
+private String name;
+private int age;
+public String getName() {
+return name;
+}
+public void setName(String name) {
+this.name = name;
+}
+public int getAge() {
+return age;
+}
+public void setAge(int age) {
+this.age = age;
+}
+}
+
+// sc is an existing JavaSparkContext.
+SQLContext sqlContext = new org.apache.spark.sql.SQLContext(sc);
+
+// Load a text file and convert each line to a JavaBean.
+JavaRDD&lt;Person&gt; people = sc.textFile("examples/src/main/resources/people.txt").map(
+new Function&lt;String, Person&gt;() {
+public Person call(String line) throws Exception {
+  String[] parts = line.split(",");
+
+  Person person = new Person();
+  person.setName(parts[0]);
+  person.setAge(Integer.parseInt(parts[1].trim()));
+
+  return person;
+}
+});
+
+// Apply a schema to an RDD of JavaBeans and register it as a table.
+DataFrame schemaPeople = sqlContext.createDataFrame(people, Person.class);
+schemaPeople.registerTempTable("people");
+
+// SQL can be run over RDDs that have been registered as tables.
+DataFrame teenagers = sqlContext.sql("SELECT name FROM people WHERE age &gt;= 13 AND age &lt;= 19")
+
+// The results of SQL queries are DataFrames and support all the normal RDD operations.
+// The columns of a row in the result can be accessed by ordinal.
+List&lt;String&gt; teenagerNames = teenagers.javaRDD().map(new Function&lt;Row, String&gt;() {
+public String call(Row row) {
+return "Name: " + row.getString(0);
+}
+}).collect();
+</code></pre>
+
+<p>将数据插入hive：</p>
+
+<pre><code>schemaPeople.insertInto("person")
+</code></pre>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[storm的拓扑Job的动态调度优化]]></title>
