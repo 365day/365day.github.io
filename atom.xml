@@ -4,7 +4,7 @@
   <title><![CDATA[Alfred's Blog]]></title>
   <link href="http://365day.github.io/atom.xml" rel="self"/>
   <link href="http://365day.github.io/"/>
-  <updated>2016-01-25T17:33:46+08:00</updated>
+  <updated>2016-02-02T16:59:34+08:00</updated>
   <id>http://365day.github.io/</id>
   <author>
     <name><![CDATA[GaoChuanjun]]></name>
@@ -12,6 +12,94 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[Spark简介]]></title>
+    <link href="http://365day.github.io/blog/2016/02/02/sparkjian-jie-yu-ji-suan-mo-xing/"/>
+    <updated>2016-02-02T16:25:19+08:00</updated>
+    <id>http://365day.github.io/blog/2016/02/02/sparkjian-jie-yu-ji-suan-mo-xing</id>
+    <content type="html"><![CDATA[<p>Saprk是基于内存计算的大数据分布式计算框架。Spark基于内存计算，提高了在大数据环境下数据处理的实时性，同时保证了高容错性和高可伸缩性，允许用户将Spark部署在大量廉价硬件之上，形成集群。</p>
+
+<p>Spark特点：</p>
+
+<ul>
+<li>分布式计算</li>
+<li>内存计算</li>
+<li>容错，checkpoint</li>
+<li>多计算范式</li>
+</ul>
+
+
+<p>Spark于2009年诞生于加州大学伯克利分校AMPLab。目前，已经成为Apache软件基金会旗下顶级开源项目。</p>
+
+<p>官网：<a href="http://spark.apache.org/">http://spark.apache.org/</a></p>
+
+<h4>Spark简介-历史</h4>
+
+<ul>
+<li>2009年：Spark诞生于AMPLab</li>
+<li>2010年：开源</li>
+<li>2013年6月：Apache孵化器项目</li>
+<li>2014年2月：Apache顶级项目</li>
+<li>Now：Contributors > 450 人</li>
+</ul>
+
+
+<h4>Saprk简介-BDAS生态系统</h4>
+
+<p><img src="http://7xq7y8.com1.z0.glb.clouddn.com/QQ20160202-0%402x.png" alt="BDAS生态系统" /></p>
+
+<ul>
+<li>Mesos作为资源管理框架，类似于yarn，负责资源调度和管理</li>
+<li>Tachyon，分布式内存文件系统，缓存数据并进行快速的数据读写</li>
+<li>Spark，核心计算引擎，将任务并行化，在集群中进行大规模数据运算</li>
+<li>SparkStreaming，流式计算引擎，将输入数据切分成小的批次，对每个批次采用Spark计算范式进行计算</li>
+<li>SparkSQL, SQL ON hadoop系统，能够提供交互式查询以及报表查询等基本的查询功能，并且能够通过JDBC等接口进行调用</li>
+<li>GraphX，图计算引擎，能够完成大规模图运算，比例PageRank算法。</li>
+<li>MLlib：机器学习库，聚类、分类以及推荐等机器学习算法。</li>
+</ul>
+
+
+<h4>Spark简介——专有系统局限</h4>
+
+<ul>
+<li><p>重复开发</p>
+
+<p>  例如，生产环境中部署了Storm做流式计算，Mahout做机器学习，两套系统都需要开发自己的内存管理以及任务调度</p></li>
+<li><p>系统组合</p>
+
+<p>  不同的系统之间要进行数据的输入和输出，需要对数据输入和输出的格式进行约定</p></li>
+<li><p>专有系统适用范围局限</p>
+
+<p>  例如，Storm比较适合做流式计算，GraphX比较适合做图计算</p></li>
+<li><p>资源分配与管理</p>
+
+<p>  两套系统分别启动自己的进程占用相应的CPU资源，这样造成资源不能很好的共享以及不容易管理</p></li>
+</ul>
+
+
+<h4>Spark简介-优势</h4>
+
+<ul>
+<li><p>计算范式支持</p>
+
+<p>  打造全栈多计算范式的高效数据数据流水线</p></li>
+<li><p>处理速度</p>
+
+<p>  轻量级快速处理大数据，Saprk的代码量很小，核心代码只有5W行</p></li>
+<li><p>易用性</p>
+
+<p>  Spark非常易于使用，分布式RDD抽象，Spark支持多语言，Scala，Java，Python</p></li>
+<li><p>兼容性</p>
+
+<p>  与HDFS等存储层兼容</p></li>
+<li><p>社区活跃度</p>
+
+<p>  社区活跃度高</p></li>
+</ul>
+
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[spark中用SparkSql操作Hive]]></title>
