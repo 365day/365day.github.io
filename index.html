@@ -9,10 +9,7 @@
   <meta name="author" content="GaoChuanjun">
 
   
-  <meta name="description" content="Saprk是基于内存计算的大数据分布式计算框架。Spark基于内存计算，提高了在大数据环境下数据处理的实时性，同时保证了高容错性和高可伸缩性，允许用户将Spark部署在大量廉价硬件之上，形成集群。 Spark特点： 分布式计算
-内存计算
-容错，checkpoint
-多计算范式 &hellip;">
+  <meta name="description" content="一、Spark程序示例 数据处理流水线： val file = sc.textFile("hdfs://xxx"); //1)输入与构造RDD val errors=file.filter(line=&gt;line.contains("ERROR"))//2) 转换Transformation &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -68,6 +65,93 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2016/02/23/sparkji-suan-mo-xing/">Spark计算模型</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2016-02-23T14:19:02+08:00" pubdate data-updated="true">Feb 23<span>rd</span>, 2016</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>一、Spark程序示例</p>
+
+<p>数据处理流水线：</p>
+
+<pre><code>val file = sc.textFile("hdfs://xxx"); //1)输入与构造RDD
+
+val errors=file.filter(line=&gt;line.contains("ERROR"))//2) 转换Transformation
+
+errors.count //3)输出Action
+</code></pre>
+
+<p>整个Spark的核心：提供分布式数据结构RDD+算法（两类RDD函数支撑）</p>
+
+<p>二、弹性分布式数据集RDD</p>
+
+<p>弹性分布式数据集RDD可以理解为一个分布式数组，它将数据切分成不同的块，分布在整个集群中的不同节点，通过统一的元数据以及RDD进行整个数据块的管理。它主要有以下5个属性：</p>
+
+<p>1) partition (A list of partitions)    ——数据块，它存储了所有数据块的列表</p>
+
+<p>2) compute函数（A function for computing each split），它能够支持利用不同的RDD完成不同的运算，有的RDD完成map运算，里面可以执行自定义的函数；可以完成过滤的运算：filter</p>
+
+<p>3）dependencies(A list of dependencies on other RDDs)：RDD的一个依赖</p>
+
+<p>4) partitioner：在分布式的数据结构中，是对数据要通过shuffle节点间的数据网络传输，进行一个重分区。默认支持hash分区算法</p>
+
+<p>5）preferredLocations（Optionally, a list of preferred locations to compute each split on (e.g. block locations for an HDFS file)）</p>
+
+<p>三、RDD两类基础函数</p>
+
+<p>1) 转化(Transformations) :</p>
+
+<p>Transformations操作是延迟计算的。操作有：mapper,filter等。如果没有action算子，任务不会执行。</p>
+
+<ul>
+<li>map(func)：对调用map的RDD数据集中的每个element都使用func，然后返回一个新的RDD，这个返回的数据集是分布式的数据集。</li>
+<li>filter(func):对调用filter的RDD数据集中的每个元素都使用func，然后返回一个包含使用func为true的元素构成的RDD</li>
+<li>reduceByKey(func,[numTasks])：就是用一个给定的reduce func再作用在groupByKey产生的(K, Seq[V])，比如求和，求平均数，类似于SQL中的group by操作</li>
+</ul>
+
+
+<p>2）行动(Actions)</p>
+
+<p>Actions算子会触发Spark提交作业（Job），并将数据输出Spark系统</p>
+
+<ul>
+<li>reduce(func)：说白了就是聚集，但是传入的函数是两个参数输入返回一个值。这个函数必须是满足交换律和结合律的</li>
+<li>collect()：一般在filter或者足够小的结果的时候，再用collect封装返回一个数组</li>
+<li>count()：返回的是dataset中的element的个数</li>
+<li>first()：返回的是datasetz中的第一个元素</li>
+<li>take(n)：返回前n个elements，这个是driver program返回的</li>
+</ul>
+
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -2301,190 +2385,6 @@ procs_blocked 0
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2014/05/08/mac-os-xxia-bian-yi-jzmq/">Mac OS X下编译jzmq</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2014-05-08T18:48:58+08:00" pubdate data-updated="true">May 8<span>th</span>, 2014</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>本文旨在帮助Mac OS X下的用户编译jzmq，本文出现的诸多问题也仅仅局限于MAC OS X，在RedHat、CentOS等系统环境下的用户未必会出现此类问题。</p>
-
-<p>jzmq是为Java语言提供的一个可以与ZeroMQ进行通信的链接库。</p>
-
-<p>安装jzmq之前请确认已经部署有JVM环境。</p>
-
-<p>在MAC OS X下编译jzmq首先需要autotools，autotools环境需要三个lib：autoconf、automake和libtool。</p>
-
-<h6>一、部署autotools环境：</h6>
-
-<p>1、为autotools创建安装目录：本文部署在/usr/local/devtools（可自定义）目录下，最好在环境变量下配置一下该路径，~/.bash_profile，</p>
-
-<p><code>export build=/usr/local/devtools</code></p>
-
-<p>使环境变量生效</p>
-
-<p><code>source ~/.bash_profile</code></p>
-
-<p>2、安装部署autoconf</p>
-
-<p>在<a href="http://mirrors.ustc.edu.cn/gnu/autoconf/">http://mirrors.ustc.edu.cn/gnu/autoconf/</a>目录下下载最新的autoconf，最新版本的命名为autoconf-latest.tar.gz</p>
-
-<p>将autoconf-latest.tar.gz拷贝至$build目录下，解压缩</p>
-
-<blockquote><p>cd $build</p>
-
-<p>tar zxvf autoconf-latest.tar.gz</p>
-
-<p>cd autoconf-latest</p>
-
-<p>./configure &mdash;prefix=$build/autotools-bin</p>
-
-<p>make</p>
-
-<p>make install</p></blockquote>
-
-<p>在~/.bash_profile下添加PATH环境变量</p>
-
-<p><code>export PATH=$PATH:$build/autotools-bin/bin</code></p>
-
-<p>3、安装部署automake</p>
-
-<p>在<a href="http://mirror.bjtu.edu.cn/gnu/automake/">http://mirror.bjtu.edu.cn/gnu/automake/</a>目录下下载最新的automake，最新版本的命名为automake-1.14.tar.gz</p>
-
-<p>将automake-1.14.tar.gz拷贝至$build目录下，解压缩</p>
-
-<blockquote><p>cd $$build</p>
-
-<p>tar zxvf automake-1.14.tar.gz</p>
-
-<p>cd automake-1.14</p>
-
-<p>./configure &mdash;prefix=$build/autotools-bin</p>
-
-<p>make</p>
-
-<p>make install</p></blockquote>
-
-<p>4、安装部署libtool</p>
-
-<p>在<a href="http://mirror.bjtu.edu.cn/gnu/libtool/">http://mirror.bjtu.edu.cn/gnu/libtool/</a>目录下下载最新的libtool，最新版本的命名为libtool-2.4.2.tar.gz</p>
-
-<p>将libtool-2.4.2.tar.gz拷贝至$build目录下，解压缩</p>
-
-<blockquote><p>cd $$build</p>
-
-<p>tar zxvf libtool-2.4.2.tar.gz</p>
-
-<p>cd libtool-2.4.2</p>
-
-<p>./configure &mdash;prefix=$build/autotools-bin</p>
-
-<p>make</p>
-
-<p>make install</p></blockquote>
-
-<h6>二、部署pkg-config</h6>
-
-<p>部署pkg-config可以借助于brew，brew是mac下一个类似于yum,apt-get等之类的工具，如果机器上没有这个命令的，请自行google。</p>
-
-<p><code>brew install pkg-config</code></p>
-
-<p>执行该命令之后pkg-config就自行安装好了，brew默认安装的路径为/usr/local/homebrew/Cellar（此路径根据你在安装brew定义的时候定义的）。</p>
-
-<p>三、部署zeromq</p>
-
-<p>到<a href="http://download.zeromq.org/">http://download.zeromq.org/</a>目录下下载zeromq，建议下载2.2.0版本，下载之后拷贝至/usr/local目录下并进行解压缩</p>
-
-<blockquote><p>tar zxvf zeromq-2.2.0.tar.gz</p>
-
-<p>cd zeromq-2.2.0</p>
-
-<p>./configure &mdash;with-pgm</p>
-
-<p>make</p>
-
-<p>make install</p></blockquote>
-
-<p>四、下载安装jzmq</p>
-
-<p>到<a href="https://github.com/zeromq/jzmq">https://github.com/zeromq/jzmq</a>目录下git出jzmq，然后进入该目录执行如下命令：</p>
-
-<p><code>./autogen.sh</code></p>
-
-<p><code>./configure</code></p>
-
-<p>在执行configure时可能会出现如下问题：</p>
-
-<blockquote><p>autoreconf: Entering directory `.&lsquo;
-autoreconf: configure.in: not using Gettext
-autoreconf: running: aclocal -I config &mdash;force -I config
-aclocal: warning: autoconf input should be named &#8216;configure.ac&rsquo;, not &lsquo;configure.in&rsquo;
-autoreconf: configure.in: tracing
-autoreconf: configure.in: not using Libtool
-autoreconf: running: /usr/local/homebrew/Cellar/autoconf/2.69/bin/autoconf &mdash;include=config &mdash;force
-configure.in:28: error: possibly undefined macro: AC_PROG_LIBTOOL</p>
-
-<pre><code>  If this token and others are legitimate, please use m4_pattern_allow.
-  See the Autoconf documentation.
-</code></pre>
-
-<p>autoreconf: /usr/local/homebrew/Cellar/autoconf/2.69/bin/autoconf failed with exit status: 1
-autogen.sh: error: autoreconf exited with status 0</p></blockquote>
-
-<p>解决方法如下：（以下命令参考于<a href="http://stackoverflow.com/questions/3522248/how-do-i-compile-jzmq-for-zeromq-on-osx">http://stackoverflow.com/questions/3522248/how-do-i-compile-jzmq-for-zeromq-on-osx</a>）：</p>
-
-<p>在控制台下执行如下两行命令：</p>
-
-<blockquote><p>eval `brew &mdash;config | grep HOMEBREW_PREFIX | sed &rsquo;s/: /=/&lsquo;`</p>
-
-<p>sudo bash -c &lsquo;echo &rsquo;$HOMEBREW_PREFIX/share/aclocal&#8217; >> `aclocal &mdash;print-ac-dir`/dirlist&#8217;</p></blockquote>
-
-<p>执行上述命令如果出现如下问题：</p>
-
-<blockquote><p>bash: aclocal: command not found</p></blockquote>
-
-<p>请加入aclocal的全路径：</p>
-
-<blockquote><p>sudo bash -c &lsquo;echo &rsquo;$HOMEBREW_PREFIX/share/aclocal&#8217; >> `/usr/local/devtools/autotools-bin/bin/aclocal &mdash;print-ac-dir`/dirlist&#8217;</p></blockquote>
-
-<p>configure命令执行通过之后，执行</p>
-
-<p><code>make</code></p>
-
-<p><code>sudo make install</code></p>
-
-<p>最后会在/usr/local/share/java/目录下生成zmq.jar包，在/usr/local/lib目录下生成native lib.</p>
-
-<p>在部署过程中，可能还会出现其它问题，一般这些问题均是由缺少某个库引起的，安装相应的库便可解决这些问题。</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/2/">&larr; Older</a>
@@ -2506,6 +2406,10 @@ autogen.sh: error: autoreconf exited with status 0</p></blockquote>
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2016/02/23/sparkji-suan-mo-xing/">Spark计算模型</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2016/02/02/sparkjian-jie-yu-ji-suan-mo-xing/">Spark简介</a>
       </li>
     
@@ -2519,10 +2423,6 @@ autogen.sh: error: autoreconf exited with status 0</p></blockquote>
     
       <li class="post">
         <a href="/blog/2014/07/03/atof-jiang-zi-fu-chuan-zhuan-hua-wei-fu-dian-shu-de-javashi-xian/">atof(将字符串转化为浮点数的Java实现)</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014/05/27/nginxyou-hua-pian-zhi-linux-nei-he-can-shu-de-you-hua/">nginx优化篇之Linux 内核参数的优化</a>
       </li>
     
   </ul>

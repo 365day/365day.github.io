@@ -4,7 +4,7 @@
   <title><![CDATA[Alfred's Blog]]></title>
   <link href="http://365day.github.io/atom.xml" rel="self"/>
   <link href="http://365day.github.io/"/>
-  <updated>2016-02-02T16:59:34+08:00</updated>
+  <updated>2016-02-23T15:51:56+08:00</updated>
   <id>http://365day.github.io/</id>
   <author>
     <name><![CDATA[GaoChuanjun]]></name>
@@ -12,6 +12,66 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[Spark计算模型]]></title>
+    <link href="http://365day.github.io/blog/2016/02/23/sparkji-suan-mo-xing/"/>
+    <updated>2016-02-23T14:19:02+08:00</updated>
+    <id>http://365day.github.io/blog/2016/02/23/sparkji-suan-mo-xing</id>
+    <content type="html"><![CDATA[<p>一、Spark程序示例</p>
+
+<p>数据处理流水线：</p>
+
+<pre><code>val file = sc.textFile("hdfs://xxx"); //1)输入与构造RDD
+
+val errors=file.filter(line=&gt;line.contains("ERROR"))//2) 转换Transformation
+
+errors.count //3)输出Action
+</code></pre>
+
+<p>整个Spark的核心：提供分布式数据结构RDD+算法（两类RDD函数支撑）</p>
+
+<p>二、弹性分布式数据集RDD</p>
+
+<p>弹性分布式数据集RDD可以理解为一个分布式数组，它将数据切分成不同的块，分布在整个集群中的不同节点，通过统一的元数据以及RDD进行整个数据块的管理。它主要有以下5个属性：</p>
+
+<p>1) partition (A list of partitions)    ——数据块，它存储了所有数据块的列表</p>
+
+<p>2) compute函数（A function for computing each split），它能够支持利用不同的RDD完成不同的运算，有的RDD完成map运算，里面可以执行自定义的函数；可以完成过滤的运算：filter</p>
+
+<p>3）dependencies(A list of dependencies on other RDDs)：RDD的一个依赖</p>
+
+<p>4) partitioner：在分布式的数据结构中，是对数据要通过shuffle节点间的数据网络传输，进行一个重分区。默认支持hash分区算法</p>
+
+<p>5）preferredLocations（Optionally, a list of preferred locations to compute each split on (e.g. block locations for an HDFS file)）</p>
+
+<p>三、RDD两类基础函数</p>
+
+<p>1) 转化(Transformations) :</p>
+
+<p>Transformations操作是延迟计算的。操作有：mapper,filter等。如果没有action算子，任务不会执行。</p>
+
+<ul>
+<li>map(func)：对调用map的RDD数据集中的每个element都使用func，然后返回一个新的RDD，这个返回的数据集是分布式的数据集。</li>
+<li>filter(func):对调用filter的RDD数据集中的每个元素都使用func，然后返回一个包含使用func为true的元素构成的RDD</li>
+<li>reduceByKey(func,[numTasks])：就是用一个给定的reduce func再作用在groupByKey产生的(K, Seq[V])，比如求和，求平均数，类似于SQL中的group by操作</li>
+</ul>
+
+
+<p>2）行动(Actions)</p>
+
+<p>Actions算子会触发Spark提交作业（Job），并将数据输出Spark系统</p>
+
+<ul>
+<li>reduce(func)：说白了就是聚集，但是传入的函数是两个参数输入返回一个值。这个函数必须是满足交换律和结合律的</li>
+<li>collect()：一般在filter或者足够小的结果的时候，再用collect封装返回一个数组</li>
+<li>count()：返回的是dataset中的element的个数</li>
+<li>first()：返回的是datasetz中的第一个元素</li>
+<li>take(n)：返回前n个elements，这个是driver program返回的</li>
+</ul>
+
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[Spark简介]]></title>
